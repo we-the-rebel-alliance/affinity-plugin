@@ -1,8 +1,8 @@
 {
-  "name": "@joe-broadhead/opencode-affinity",
-  "version": "0.0.8",
+  "name": "@we-the-rebel-alliance/affinity-plugin",
+  "version": "0.0.0",
   "private": true,
-  "description": "Unofficial OpenCode plugin for Affinity CRM: find, read and update your firm's companies, people, deals, notes and relationships through Affinity's official MCP server",
+  "description": "Unofficial OpenCode plugin for Affinity CRM: read and change your firm's companies, people, deals, notes and meetings.",
   "keywords": [
     "opencode",
     "opencode-plugin",
@@ -12,11 +12,11 @@
   "type": "module",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/joe-broadhead/opencode-affinity.git"
+    "url": "git+https://github.com/we-the-rebel-alliance/affinity-plugin.git"
   },
-  "homepage": "https://github.com/joe-broadhead/opencode-affinity#readme",
+  "homepage": "https://github.com/we-the-rebel-alliance/affinity-plugin#readme",
   "bugs": {
-    "url": "https://github.com/joe-broadhead/opencode-affinity/issues"
+    "url": "https://github.com/we-the-rebel-alliance/affinity-plugin/issues"
   },
   "exports": {
     ".": "./dist/index.js",
@@ -36,7 +36,7 @@
     "CHANGELOG.md"
   ],
   "opencode": {
-    "host": ">=2.2.3 <2.4.0",
+    "host": ">=2.4.1 <2.5.0",
     "icons": [
       {
         "src": "assets/icon.svg",
@@ -166,9 +166,9 @@
     ]
   },
   "devDependencies": {
-    "@opencode/client": "2.2.3",
-    "@opencode/plugin": "2.2.3",
-    "@opencode/sdk": "2.2.3",
+    "@opencode/client": "2.4.1",
+    "@opencode/plugin": "2.4.1",
+    "@opencode/sdk": "2.4.1",
     "@opentui/core": "0.8.0",
     "@opentui/solid": "0.8.0",
     "@types/bun": "1.4.4",
