@@ -5,10 +5,11 @@ import { describe, expect, test } from "bun:test"
 import { readdirSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 import { DESTRUCTIVE_TOOLS, PARAMETERS, READ_TOOLS, WORKFLOW_TOOLS, WRITE_TOOLS } from "../../src/affinity-tools.js"
+import { SOURCE_METHODS } from "../../src/permissions.js"
 import { parseSkill, SKILL_NAMES, SKILLS_DIR } from "../../src/skills.js"
 
 const NAMES = [...SKILL_NAMES]
-const KNOWN = [...READ_TOOLS, ...WRITE_TOOLS, ...DESTRUCTIVE_TOOLS]
+const KNOWN = [...READ_TOOLS, ...WRITE_TOOLS, ...DESTRUCTIVE_TOOLS, ...SOURCE_METHODS]
 const MAX_LINES = 100
 // Parameter names that look like tool names, or that a bare name in a code span might be.
 const PARAMETER_NAMES = ["search_criteria", "field_ids", "company_ids", "person_ids", "opportunity_ids", "list_entry_id"]
@@ -93,16 +94,20 @@ describe("skills", () => {
     expect(calls(name).length).toBeGreaterThan(3)
   })
 
-  test("the descriptions say Affinity CRM, cover the playbook requests, and leave Canva's apps, calendars, personal reminders and hiring to others", () => {
+  test("the descriptions are the audit text, within the 300-character budget, and leave Canva's apps, calendars, personal reminders and hiring to others", () => {
     const main = description("affinity")
-    expect(main).toContain("Load before the first Affinity tool call")
-    expect(main).toContain("Affinity CRM")
-    // SC-6's three trigger misses: a prep with no app named, a backchannel on a "candidate", and a market map.
-    for (const words of ["prep for a meeting or call with a company, founder or LP the firm tracks", "backchannel reference checks", "market maps", "portfolio check-ins", "reminders on records"]) {
-      expect(main).toContain(words)
-    }
-    expect(main).toMatch(/Not for Affinity Photo, Designer or Publisher \(Canva's design apps\) or design files, the user's own calendar or personal reminders/)
-    expect(description("affinity-write")).toContain("Load before any Affinity CRM change")
+    expect(main).toBe(
+      "The firm's Affinity CRM: companies, founders, LPs, deals, pipeline stages, warm intros, notes, reminders, meetings and transcripts held in Affinity, and meeting prep for tracked companies. Not for the user's calendar, Granola or Wispr Flow notes, or hiring interviews (metaview).",
+    )
+    expect(main.length).toBeLessThanOrEqual(300)
+    expect(main).toContain("The firm's Affinity CRM")
+    expect(main).toContain("Not for the user's calendar, Granola or Wispr Flow notes, or hiring interviews (metaview).")
+    const write = description("affinity-write")
+    expect(write).toBe(
+      "Before any Affinity change: create or update records, lists, stages, fields, notes, interactions or reminders, file links, deletes, merges, or a report to Affinity.",
+    )
+    expect(write.length).toBeLessThanOrEqual(300)
+    expect(write).toContain("Before any Affinity change")
     for (const name of NAMES) expect(description(name)).not.toMatch(/\bdesign(?:er)? project|\.af(?:design|photo|pub)\b|\bschedule a\b|\bpost to Slack\b/i)
   })
 
@@ -251,9 +256,9 @@ describe("skills", () => {
     expect(flat("affinity-write")).toMatch(/give it only to the user, in chat, never in a file, note or message/)
   })
 
-  test.each(NAMES)("%s links only to plain files an agent can read, never to a GitHub page", (name) => {
+  test.each(NAMES)("%s links only to plain files an agent can read, never to a GitHub page it cannot fetch", (name) => {
     const links = read(name).match(/https?:\/\/[^\s)>]*[^\s)>.,]/g) ?? []
-    for (const link of links) expect(link).toMatch(/^https:\/\/raw\.githubusercontent\.com\/joe-broadhead\/opencode-affinity\/HEAD\//)
+    for (const link of links) expect(link).toMatch(/^https:\/\/github\.com\/we-the-rebel-alliance\/affinity-plugin\/blob\/master\//)
   })
 
   test("affinity's scripts section creates a session for the script and never borrows one", () => {

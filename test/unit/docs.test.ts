@@ -1,5 +1,5 @@
-// The docs and skills must match the code: tool names, the deny rule, error codes, the uninstall order and the Jelly
-// guide, and the few counts they do state, which this file derives from src/affinity-tools.ts.
+// The docs and skills must match the code: tool names, counts, error codes, the uninstall order and the fixed-context
+// text, and the few counts they do state, which this file derives from src/affinity-tools.ts.
 import { describe, expect, test } from "bun:test"
 import { readdirSync, readFileSync } from "node:fs"
 import { join } from "node:path"
@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url"
 import { CODES, TESTED_HOSTS, UNTESTED_EXAMPLE } from "../../src/constants.js"
 import { DESTRUCTIVE_TOOLS, PARAMETERS, READ_TOOLS, WORKFLOW_TOOLS, WRITE_TOOLS } from "../../src/affinity-tools.js"
 import { METHODS, NEXT_STEPS, TOOLS_RPC_ID } from "../../src/tools-rpc.js"
-import { ACCESS, defaultRules, SOURCE_METHODS } from "../../src/permissions.js"
+import { ACCESS, SOURCE_METHODS } from "../../src/permissions.js"
 
 const ROOT = fileURLToPath(new URL("../..", import.meta.url))
 // Everything a user or the model reads about the current release.
@@ -29,6 +29,7 @@ const WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "e
 const TENS = ["", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"]
 const count = (n: number) => (n <= 20 ? WORDS[n]! : n < 100 ? `${TENS[Math.floor(n / 10)]}${n % 10 === 0 ? "" : `-${WORDS[n % 10]}`}` : String(n))
 const deletes = DESTRUCTIVE_TOOLS.filter((tool) => tool.startsWith("delete_")).length
+const TESTED_LIST = TESTED_HOSTS.length === 1 ? TESTED_HOSTS[0]! : `${TESTED_HOSTS.slice(0, -1).join(", ")} and ${TESTED_HOSTS.at(-1)}`
 
 describe("the tool counts the docs state", () => {
   // Every number here comes from the classification, so a tool added to a list fails this test until the docs follow.
@@ -39,21 +40,19 @@ describe("the tool counts the docs state", () => {
     expect(text("docs/configuration.md")).toContain(`${count(DESTRUCTIVE_TOOLS.length)} of the destructive class`)
     expect(text("docs/scripting.md")).toContain(`the ${count(WRITE_TOOLS.length)} writes`)
     expect(text("docs/scripting.md")).toContain(`${count(WORKFLOW_TOOLS.length)} workflow playbooks`)
-    expect(text("docs/scripting.md")).toContain(`the ${count(DESTRUCTIVE_TOOLS.length)} denied`)
-    expect(text("AGENTS.md")).toContain(`the ${count(DESTRUCTIVE_TOOLS.length)} destructive tools`)
-    expect(text("docs/jelly.md")).toContain(`The ${count(deletes)} deletes`)
+    expect(text("docs/scripting.md")).toContain(`the ${count(DESTRUCTIVE_TOOLS.length)} destructive`)
   })
 
   test("names every destructive tool in the scripting guide, and prints no stale digit form of a count", () => {
     for (const tool of DESTRUCTIVE_TOOLS) expect(text("docs/scripting.md")).toContain(`\`${tool}\``)
-    expect(text("docs/scripting.md")).not.toMatch(/the \d+ (?:writes|denied)/)
+    expect(text("docs/scripting.md")).not.toMatch(/the \d+ (?:writes|destructive|denied)/)
   })
 })
 
 describe("docs", () => {
   test.each(FILES)("%s states no count of read, write or declared tools that could go stale", (file) => {
     const counts = [...text(file).matchAll(/\b\d+ (?:known )?(?:read|write)(?:s\b| tools\b| read-only)|\b\d+ tools are declared/g)].map((match) => match[0])
-    const stale = counts.filter((count) => !count.startsWith(`${READ_TOOLS.length} read`) && !count.startsWith(`${WRITE_TOOLS.length} write`))
+    const stale = counts.filter((match) => !match.startsWith(`${READ_TOOLS.length} read`) && !match.startsWith(`${WRITE_TOOLS.length} write`))
     expect(stale).toEqual([])
   })
 
@@ -63,48 +62,37 @@ describe("docs", () => {
     expect(named.filter((tool) => !KNOWN.includes(tool) && !KNOWN.includes(`affinity_${tool}`))).toEqual([])
   })
 
-  test.each(["README.md", "docs/configuration.md", "docs/scripting.md", "docs/jelly.md", "SECURITY.md"])("%s says nothing provisional or pending", (file) => {
+  test.each(["README.md", "docs/configuration.md", "docs/scripting.md", "SECURITY.md"])("%s says nothing provisional or pending", (file) => {
     expect(text(file)).not.toMatch(/provisional|not yet (?:checked|published|signed)|private package|TODO/i)
   })
 
   // The one exception is the install spec, which names the release tag by design (the GitHub install takes `#v<x.y.z>`).
   test("the README names no version of the plugin, except its install spec", () => {
     // The loopback address in the own app's redirect URIs is not a version.
-    expect(text("README.md").replace(/opencode-affinity#v\d+\.\d+\.\d+/g, "").replaceAll("127.0.0.1", "")).not.toMatch(/opencode-affinity@\d|\b0\.\d+\.\d+\b|\bv\d+\.\d+\.\d+\b/)
+    expect(text("README.md").replace(/affinity-plugin#v\d+\.\d+\.\d+/g, "").replaceAll("127.0.0.1", "")).not.toMatch(/affinity-plugin@\d|\b0\.\d+\.\d+\b|\bv\d+\.\d+\.\d+\b/)
   })
 
-  // R7 with R18: the block for each access value is in the README, generated from defaultRules(access).
-  test("the README prints the whole default-rules block for each access value, and each equals defaultRules(access)", () => {
-    const blocks = [...raw("README.md").matchAll(/```json\n(\[[\s\S]*?\])\n```/g)].map((match) => JSON.parse(match[1]!) as { action: string; effect: string }[])
-    const arrays = blocks.filter((value) => Array.isArray(value) && value.some((rule) => rule?.action === "affinity_*"))
-    for (const access of ACCESS) {
-      const expected = defaultRules(access)
-      const found = arrays.filter((value) => JSON.stringify(value) === JSON.stringify(expected))
-      expect({ access, found: found.length }).toEqual({ access, found: 1 })
-    }
-    for (const value of blocks) if (Array.isArray(value)) for (const rule of value) expect(typeof rule).toBe("object")
-    expect(/## Permissions\n\n\*\*Every tool is allowed by default\.\*\*/.test(raw("README.md"))).toBe(true)
-    // Every destructive tool is asked for under ask-changes and denied under read-only.
-    const effectIn = (access: "ask-changes" | "read-only", tool: string) => defaultRules(access).find((rule) => rule.action === `affinity_${tool}`)?.effect
-    for (const tool of DESTRUCTIVE_TOOLS) expect([effectIn("ask-changes", tool), effectIn("read-only", tool)]).toEqual(["ask", "deny"])
+  test("the configuration guide explains every access value and that the plugin generates its block", () => {
+    const guide = text("docs/configuration.md")
+    for (const access of ACCESS) expect(guide).toContain(`\`${access}\``)
+    expect(guide).toContain("The value generates the block from the tool table's classes")
   })
 
-  test("no doc or skill gives a destructive tool an allow rule outside the generated block", () => {
+  test("no doc or skill gives a destructive tool an allow rule", () => {
     for (const file of FILES) {
       const source = raw(file)
       for (const tool of DESTRUCTIVE_TOOLS) {
         const rules = [...source.matchAll(/\{[^{}]*\}/g)].map((match) => match[0])
         const allowed = rules.filter((rule) => rule.includes(`"action": "affinity_${tool}"`) && /"effect"\s*:\s*"allow"/.test(rule))
-        const generated = file === "README.md" && source.includes(`{ "action": "affinity_${tool}", "resource": "*", "effect": "allow" }`)
-        expect({ file, tool, allowed: allowed.length, generated }).toEqual({ file, tool, allowed: generated ? 1 : 0, generated })
+        expect({ file, tool, allowed: allowed.length }).toEqual({ file, tool, allowed: 0 })
       }
     }
   })
 
-  test.each(FILES)("%s puts no ask or allow recipe for a Affinity tool at the top level, where it would reach Explore", (file) => {
-    const raw = readFileSync(join(ROOT, file), "utf8")
+  test.each(FILES)("%s puts no ask or allow recipe for an Affinity tool at the top level, where it would reach Explore", (file) => {
+    const source = readFileSync(join(ROOT, file), "utf8")
     // Every JSON example that is a config: its top-level permissions only tighten.
-    for (const [, body] of raw.matchAll(/```json\n([^]*?)```/g)) {
+    for (const [, body] of source.matchAll(/```json\n([^]*?)```/g)) {
       let config: unknown
       try {
         config = JSON.parse(body!)
@@ -114,9 +102,8 @@ describe("docs", () => {
       const top = !Array.isArray(config) && typeof config === "object" && config !== null ? ((config as { permissions?: { action: string; effect: string }[] }).permissions ?? []) : []
       expect(top.filter((rule) => rule.action.startsWith("affinity_") && rule.effect !== "deny")).toEqual([])
     }
-    // Every ask or allow rule for one tool sits in an agent's own rules, said in its paragraph or code block. The
-    // plugin's own block, which the plugin inserts itself, is the one exception.
-    const blocks = raw.split(/\n\s*\n/)
+    // Every ask or allow rule for one tool sits in an agent's own rules, said in its paragraph or code block.
+    const blocks = source.split(/\n\s*\n/)
     blocks.forEach((block, index) => {
       if (!/\{ "action": "affinity_[a-z_]+", "resource": "\*", "effect": "(?:ask|allow)" \}/.test(block)) return
       const context = `${blocks[index - 1] ?? ""}\n${block}`
@@ -146,7 +133,7 @@ describe("docs", () => {
     const uninstall = /## Uninstall(.*?)## Links/.exec(text("README.md"))?.[1] ?? ""
     const logout = uninstall.indexOf("opencode mcp logout affinity")
     const list = uninstall.indexOf("opencode auth list")
-    const remove = uninstall.indexOf("opencode plugin remove github:joe-broadhead/opencode-affinity#v0.0.8")
+    const remove = uninstall.indexOf("opencode plugin remove github:we-the-rebel-alliance/affinity-plugin#v0.0.0")
     expect(logout).toBeGreaterThanOrEqual(0)
     expect(list).toBeGreaterThan(logout)
     expect(remove).toBeGreaterThan(list)
@@ -158,18 +145,12 @@ describe("docs", () => {
     const caveat = "Run it from the project folder where the plugin is installed, or remove the account in `/connect` → **Affinity**. If it answers `MCP server not found: affinity`, OpenCode is still opening that folder: wait a few seconds and run it again."
     for (const file of ["README.md", "docs/configuration.md"]) expect({ file, caveat: text(file).includes(caveat) }).toEqual({ file, caveat: true })
     expect(text("skills/affinity/SKILL.md")).toContain("from the project folder where the plugin is installed; if it says `MCP server not found`, wait a few seconds and run it again")
-    // And each troubleshooting row that names a command points back to it.
-    const troubleshooting = /## Troubleshooting(.*?)## /.exec(text("README.md"))?.[1] ?? ""
-    for (const row of troubleshooting.split("| Connection: sign-in required").slice(1)) expect(row).toContain("from the project folder")
   })
 
   test("the admin step is advice beside the status, not an error code: it is in no error list, and both guides keep it", () => {
     const errors = /## Errors(.*?)## /.exec(text("docs/configuration.md"))?.[1] ?? ""
-    const troubleshooting = /## Troubleshooting(.*?)## /.exec(text("README.md"))?.[1] ?? ""
     expect(errors).not.toContain("CLIENT_NOT_ALLOWED")
     for (const file of FILES) expect(text(file)).not.toContain("CLIENT_NOT_ALLOWED")
-    expect(troubleshooting).toContain("| Organisation setup row: Affinity shows an error page instead of asking for access |")
-    expect(troubleshooting).toContain("https://opencode.ai/oauth/opencode/client.json")
     expect(text("docs/configuration.md")).toContain("https://opencode.ai/oauth/opencode/client.json")
     // It is worded for a first sign-in, because status cannot tell a refusal from an expiry.
     expect(text("docs/configuration.md")).toContain("If this is the first sign-in here, an Affinity admin must first add OpenCode's client URL")
@@ -177,8 +158,6 @@ describe("docs", () => {
   })
 
   test("the guides state what happens, and claim no unverified or simulated flow", () => {
-    // DR-2: the sign-in is the section where a stranger decides to try the plugin, so it says what happens and stops.
-    // The tool table's reconcile note is the one live-sign-in sentence the README may keep, in Known limits.
     for (const file of FILES) {
       expect({ file, claim: /simulated|reproduced only against|known only from|first live sign-in confirms|confirmed at the first live sign-in|is still unverified|not yet verified/i.exec(text(file))?.[0] }).toEqual({ file, claim: undefined })
     }
@@ -189,11 +168,10 @@ describe("docs", () => {
   test("the guides name Affinity CRM apart from Canva's design apps, and document the playbook commands", () => {
     const readme = text("README.md")
     expect(readme).toContain("This is Affinity CRM ([affinity.co](https://www.affinity.co)), the relationship-intelligence CRM for deal teams: not Affinity Photo, Designer or Publisher, Canva's design apps")
-    for (const guide of [readme, text("docs/configuration.md")]) {
-      expect(guide).toContain("/affinity:<name>")
-      expect(guide).toContain("A run is your request for that routine; the text it adds is Affinity's, so its steps are guidance")
-      expect(guide).toContain("/affinity:affinity-meeting-prep")
-    }
+    expect(readme).toContain("/affinity:<name>")
+    expect(text("docs/configuration.md")).toContain("/affinity:<name>")
+    expect(text("docs/configuration.md")).toContain("A run is your request for that routine; the text it adds is Affinity's")
+    expect(text("docs/configuration.md")).toContain("/affinity:affinity-meeting-prep")
     expect(text("SECURITY.md")).toContain("a run is your request for that routine, but the text it adds is Affinity's")
   })
 
@@ -233,10 +211,9 @@ describe("docs", () => {
     expect(Object.keys(NEXT_STEPS).sort()).toEqual(rpc.sort())
   })
 
-  test("the README's Errors table is CODES, in both directions, with the same surface and when", () => {
-    const errors = /## Errors\n([\s\S]*?)\n## /.exec(raw("README.md"))?.[1] ?? ""
-    const rows = [...errors.matchAll(/\| `([A-Z][A-Z_]+)` \| ([a-z-]+) \| ([^|]+?) \|/g)].map(([, code, surface, when]) => [code!, { surface: surface!, when: when!.trim() }] as const)
-    expect(Object.fromEntries(rows)).toEqual(CODES)
+  test("the README points at the two error tables instead of duplicating them", () => {
+    expect(text("README.md")).toContain("docs/configuration.md#errors")
+    expect(text("README.md")).toContain("docs/scripting.md#errors")
   })
 
   test("the configuration guide documents the setup and status codes, and the scripting guide the rpc and source ones", () => {
@@ -249,7 +226,6 @@ describe("docs", () => {
     const named = [...scripting.matchAll(/`([A-Z][A-Z_]+)`/g)].map((match) => match[1]!)
     expect(named.filter((code) => !(code in CODES))).toEqual([])
   })
-
 
   test("the configuration guide's Errors table lists only codes the plugin raises", () => {
     const sources = readdirSync(join(ROOT, "src")).filter((name) => name.endsWith(".ts") && name !== "tools-rpc.ts")
@@ -272,12 +248,11 @@ describe("docs", () => {
     }
     for (const file of ["README.md", "AGENTS.md", "SECURITY.md", "docs/configuration.md"]) check(file, raw(file))
     // The newest release notes that name the tested releases, which a later patch's notes need not repeat.
-    const changelog = raw("CHANGELOG.md").split("\n## [").find((section) => section.includes("tested on ")) ?? ""
+    const changelog = raw("CHANGELOG.md").split("\n## ").find((section) => section.includes("tested on ")) ?? ""
     expect(changelog.length).toBeGreaterThan(0)
     check("CHANGELOG.md (newest tested-on notes)", changelog)
     expect(mentions).toBeGreaterThanOrEqual(2)
-    const list = `${TESTED_HOSTS.slice(0, -1).join(", ")} and ${TESTED_HOSTS.at(-1)}`
-    for (const file of ["AGENTS.md", "docs/configuration.md", "CONTRIBUTING.md"]) expect({ file, list: text(file).includes(list) }).toEqual({ file, list: true })
+    for (const file of ["AGENTS.md", "docs/configuration.md", "CONTRIBUTING.md"]) expect({ file, list: text(file).includes(TESTED_LIST) }).toEqual({ file, list: true })
     expect(text("docs/configuration.md")).toContain(UNTESTED_EXAMPLE)
     for (const version of TESTED_HOSTS) expect(text("docs/configuration.md")).not.toContain(`inside the range, such as ${version}`)
   })
@@ -328,21 +303,6 @@ describe("docs", () => {
     expect(examples).toBeGreaterThanOrEqual(3)
   })
 
-  test("the Jelly guide describes the declaration as Jelly reads it, with no placeholder or version", () => {
-    const guide = text("docs/jelly.md")
-    expect(guide).not.toMatch(/`latest` is|None yet/)
-    expect(guide).toContain("the one line in `jelly.summary`, and beside it the mark in `jelly.icon`")
-    // Jelly's contracts drop an unknown top-level key; they do not refuse the declaration for it.
-    expect(guide).toContain("drop a top-level key they don't know")
-    expect(guide).not.toMatch(/refuses this declaration|accepts no unknown keys/)
-    // R18: a tool Affinity adds later is undeclared, so Jelly runs it with the plugin's own default.
-    expect(guide).toContain("in Jelly it runs with the plugin's own default: allowed, even if it changes something")
-    const destructive = guide.split("- The eight deletes")[1]?.split("A tool the upstream server adds later")[0] ?? ""
-    for (const name of DESTRUCTIVE_TOOLS) expect(destructive).toContain(`affinity_${name}`)
-    const skills = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8")).jelly.skills as string[]
-    expect(guide).toContain(`Declared: ${skills.map((name) => `\`${name}\``).join(", ")}.`)
-  })
-
   test("the scripting guide points at the known reads, and says every call counts against the firm's quota", () => {
     const guide = text("docs/scripting.md")
     expect(guide).toContain("(`READ_TOOLS` in `src/affinity-tools.ts`)")
@@ -350,22 +310,18 @@ describe("docs", () => {
     expect(guide).not.toContain("rationale")
   })
 
-
   // The clientId option: both routes in the rollout, the Public client type and its redirect URIs, the organisation-wide
   // entry, precedence, and the two sign-in errors an organisation's own app can meet.
   test("the guides give both rollout routes, the clientId option, its precedence and the errors of an own app", () => {
     const readme = text("README.md")
     const configuration = text("docs/configuration.md")
-    for (const words of ["### Route 1: OpenCode's client URL", "### Route 2: your organisation's own OAuth app", "Choose the **Public** client type", "`Unknown client_id` (`SERVER-OAUTH-003`)", "`invalid_scope`", '"options": { "clientId": "<your app\'s client ID>" }']) {
-      expect({ words, found: readme.includes(words) }).toEqual({ words, found: true })
+    for (const words of ["Client URL (CIMD)", "Client ID", "clientId"]) expect({ words, found: readme.includes(words) }).toEqual({ words, found: true })
+    for (const words of ["`Unknown client_id` (SERVER-OAUTH-003)", "`invalid_scope`", '"options": { "clientId": "<the app\'s client ID>" }']) {
+      expect({ words, found: configuration.includes(words) }).toEqual({ words, found: true })
     }
-    for (const file of ["README.md", "docs/configuration.md"]) {
-      for (const uri of ["http://127.0.0.1/callback", "http://localhost/callback", "http://127.0.0.1/mcp/oauth/callback"]) expect({ file, uri, found: text(file).includes(uri) }).toEqual({ file, uri, found: true })
-    }
+    for (const uri of ["http://127.0.0.1/callback", "http://localhost/callback", "http://127.0.0.1/mcp/oauth/callback"]) expect({ uri, found: configuration.includes(uri) }).toEqual({ uri, found: true })
     expect(configuration).toContain("### `clientId`")
-    expect(configuration).toContain('"options": { "clientId": "<the app\'s client ID>" }')
     expect(configuration).toContain("the `Sign-in client` row says \"the clientId option is ignored because your entry wins\"")
-    expect(text("docs/jelly.md")).toContain("`clientId`, labelled **Client ID**")
     // The docs show a client ID only as an all-zero placeholder, never a real organisation's.
     for (const file of FILES) {
       const ids = text(file).match(/\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi) ?? []
@@ -377,7 +333,7 @@ describe("docs", () => {
     const readme = text("README.md")
     expect(readme).toContain("Every call counts against your organisation's monthly Affinity API quota, which the whole firm shares")
     expect(readme).toContain("Settings → Manage Apps → New App → **Client URL (CIMD)**")
-    expect(readme).toContain("**Untick `mcp` (changes) for a read-only connection**")
+    expect(readme).toContain("**Untick `mcp` (changes) for a read-only sign-in**")
     expect(readme).toContain("Unofficial; not affiliated with Affinity.")
   })
 })

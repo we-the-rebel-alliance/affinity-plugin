@@ -15,7 +15,7 @@ describe("parseOptions", () => {
   })
 
   // An Affinity client ID is a UUID; it is not a secret, but an error shows at most its first 8 characters.
-  test("takes an organisation's client ID, trimmed, and treats an empty one as unset, as Jelly saves a cleared setting", () => {
+  test("takes an organisation's client ID, trimmed, and treats an empty one as unset", () => {
     // Hex letters in both cases: a UUID is accepted as written, lower or upper case, and trimmed.
     const id = "abcdef00-0000-4000-8000-00000000abcd"
     expect(parseOptions({ clientId: id })).toEqual({ allowUntestedHost: false, access: "all", clientId: id })
