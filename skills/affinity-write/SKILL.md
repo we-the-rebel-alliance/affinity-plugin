@@ -1,9 +1,9 @@
 ---
 name: affinity-write
-description: Load before any Affinity CRM change - creating or updating companies, people, deals (opportunities) or lists, adding a record to a list, moving a deal's stage or setting field values, creating fields or dropdown options, adding or editing CRM notes, logging an interaction, creating or reassigning reminders, file upload or download links - or when the user asks to delete or merge Affinity records or report a problem to Affinity.
+description: Before any Affinity change: create or update records, lists, stages, fields, notes, interactions or reminders, file links, deletes, merges, or a report to Affinity.
 ---
 
-If Affinity's tools are absent, run `/connect` and choose Affinity, or on Jelly call jelly_connection_request. An Affinity admin must first add OpenCode's client URL in Manage Apps.
+If Affinity's tools are absent, run `/connect` and choose Affinity. An Affinity admin must first add OpenCode's client URL in Manage Apps.
 
 # Changes in Affinity CRM
 

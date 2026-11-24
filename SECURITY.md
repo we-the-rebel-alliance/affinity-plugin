@@ -49,8 +49,8 @@ OpenCode project.
   colleagues see. The eight deletes remove data for good, and two merges cannot be undone.
 - **One line restricts it.** Set `"access": "ask-changes"` in the plugin options and every change asks first, or
   `"read-only"` and every change is denied. A rule in an agent's own `permissions` restricts one agent, and a `deny` in
-  the top-level `permissions` restricts every agent. The README's
-  [Permissions](https://github.com/joe-broadhead/opencode-affinity/blob/HEAD/README.md#permissions) has the three blocks.
+  the top-level `permissions` restricts every agent. [Permissions](https://github.com/we-the-rebel-alliance/affinity-plugin/blob/master/docs/configuration.md#permissions)
+  has the three blocks.
 - Eleven tools are of the destructive class: the eight deletes and two merges, which remove CRM data for good, and
   `affinity_send_feedback`, which sends text to Affinity's team and which Affinity's own instructions tell the model to
   offer unasked. `ask-changes` asks for each; `read-only` denies them; a `deny` in an agent's own `permissions` narrows
@@ -95,7 +95,7 @@ Things to know:
 ## Scripts
 
 The tools RPC (`affinity.crm.tools`, see
-[docs/scripting.md](https://github.com/joe-broadhead/opencode-affinity/blob/HEAD/docs/scripting.md)) exposes every
+[docs/scripting.md](https://github.com/we-the-rebel-alliance/affinity-plugin/blob/master/docs/scripting.md)) exposes every
 known Affinity tool as a method for a script, with no model, each with a class: read (the workflow playbooks too),
 write or destructive. It adds no authority:
 

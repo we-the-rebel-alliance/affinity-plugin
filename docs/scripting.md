@@ -1,7 +1,7 @@
 # Scripting
 
-A script can call Affinity's tools with no model: a cron job, a shell script, or any program that can reach the
-OpenCode server. It uses the tools RPC, `affinity.crm.tools`, through `opencode api` or an OpenCode client.
+A script or an OpenCode automation can call Affinity's tools with no model: a shell script, or any program that can
+reach the OpenCode server. It uses the tools RPC, `affinity.crm.tools`, through `opencode api` or an OpenCode client.
 
 Every tool the plugin knows is a method, named after Affinity's tool, without the `affinity_` prefix. Each method
 carries a class: the worst thing that tool can do.
@@ -12,12 +12,12 @@ carries a class: the worst thing that tool can do.
 | `read` | Affinity's seventeen workflow playbooks too, such as `affinity_meeting_prep`, `warm_intro` and `crm_audit` | each only returns text; what it can drive is the caller's own decision, under the caller's rules |
 | `write` | the twenty-four writes, such as `create_note`, `create_person`, `update_person` and `upsert_list_entry_field_values` | it changes the firm's shared CRM, or issues a file credential |
 | `destructive` | `delete_company`, `delete_person`, `delete_opportunity`, `delete_note`, `delete_list_entries`, `delete_list_field_dropdown_option`, `delete_reminder`, `delete_field`, `merge_companies`, `merge_persons`, `send_feedback` | removes CRM data for good, or sends text to Affinity's team |
-| `read` | `events_list` and `probe`, the meetings source's two methods (`affinity_events_list` and `affinity_probe`), which the plugin runs itself: see [The meetings source](#the-meetings-source) | it only reads, and every `access` value allows it |
+| `read` | `events_list` and `probe`, the meetings source's two methods (`affinity_events_list` and `affinity_probe`), which the plugin runs itself: see [The meetings source](#the-meetings-source). `events_list` is also the tool `affinity_events_list` (`tools.affinity.events_list` in Code Mode) | it only reads, and every `access` value allows it |
 | `describe` | none: lists the methods, their class, their permission action, whether OpenCode lists each tool now, each tool's input as JSON Schema, and — given a session — whether that session may call it |
 
 The methods come from the plugin's one tool table, `src/affinity-tools.ts`: the known reads (`READ_TOOLS` in
-`src/affinity-tools.ts`), the workflow playbooks in `WORKFLOW_TOOLS`, the writes in `WRITE_TOOLS`, and the eleven denied
-tools in `DENIED_TOOLS`. Call `describe` for the list: it marks a known tool that OpenCode does not list now as
+`src/affinity-tools.ts`), the workflow playbooks in `WORKFLOW_TOOLS`, the writes in `WRITE_TOOLS`, and the eleven destructive
+tools in `DESTRUCTIVE_TOOLS`. Call `describe` for the list: it marks a known tool that OpenCode does not list now as
 unavailable.
 
 The class is never the decision: the rules are. A `write` and a `destructive` method are methods too, and they run
@@ -41,7 +41,7 @@ it.
 ## The meetings source
 
 `events_list` and `probe` are the source contract's methods for `affinity.meetings` and the list snapshot
-`affinity.companies`, the sources `package.json` declares under `sources`. They are for a consumer such as Memory, jelly or Artifacts, and for a script that keeps its
+`affinity.companies`, the sources `package.json` declares under `sources`. They are for a consumer such as Memory or Artifacts, and for a script that keeps its
 own cursor. `probe` makes one `get_current_user` call and answers the account, its owner and the
 sign-in's scopes, and the plugin remembers it for the current sign-in. A listing needs no `probe` before it: after a
 start of OpenCode or a new sign-in it makes that one call itself, once.
@@ -79,6 +79,10 @@ one `search_all_companies` read. Each item is the company id, the name, and the 
 domain that holds a secret is screened whole and only then cut; a repeated id is listed once and the answer stops
 before the declared `maxBytes`. `events_list` declares both answers, the events page and this list, so the host
 accepts either. It does not replace `affinity.meetings`.
+
+`events_list` is also a tool the model sees: `affinity_events_list` (`tools.affinity.events_list` in Code Mode). It
+takes the same input, returns the same page or companies list, and is allowed under every `access` value, so a chat
+request and a script reach one run. `probe` stays RPC-only.
 
 ## A script runs as a session
 

@@ -1,127 +1,58 @@
 # Repository rules
 
-This repository builds `@joe-broadhead/opencode-affinity`, an OpenCode plugin that registers Affinity's official MCP
-server and adds default permission rules, a status command, a status dialog, two skills, a tools RPC for scripts, and
-two sources of the source contract, `affinity.meetings` and the list snapshot `affinity.companies`. It has no tool the model sees. Read [docs/architecture.md](docs/architecture.md) before you change code, and
-[CONTRIBUTING.md](CONTRIBUTING.md) for the checks and the release steps.
+This repository builds `@we-the-rebel-alliance/affinity-plugin`, an OpenCode plugin for Affinity CRM. It registers
+Affinity's official MCP server, adds the meetings source's read as a tool, and serves the tools RPC
+`affinity.crm.tools`. The plugin id is `affinity.crm`, the tool namespace is `affinity`, and the default branch is
+`master`.
+
+Version `0.0.0` is the first release of the renamed repository. The plugin-contract v0 adoption, the `capabilities`
+manifest and releases come later; until then the current layout, the `sources` and `jelly` keys, the copied kit scripts
+and the tools RPC stay working.
 
 ## Rules
 
-- **Public API only.** Use only the public `@opencode/plugin` 2.2.3 API. `opencode.host` in `package.json` and
-  `SUPPORTED_HOST` in `src/constants.ts` both say exactly `>=2.2.3 <2.4.0`, never `^2.2.3`. `TESTED_HOSTS` in
-  `src/constants.ts` is the one list of tested releases (2.2.3, 2.2.4, 2.2.5, 2.2.6, 2.2.7, 2.3.0, 2.3.1 and 2.3.2): status calls only those tested, and
-  the host and pack stages and CI run on each. Inside the range an untested release, such as 2.2.99, still starts.
 - **Greenfield.** No legacy, migration code, compatibility shim, dual path or deprecated alias, and nothing dead.
-  Delete rather than deprecate.
-- **No peers, no runtime dependencies, no lifecycle scripts.** `@opencode/plugin`, `@opencode/sdk` and
-  `@opencode/client` (whose types the host tests use) are devDependencies pinned to exactly `2.2.3`. Do not add another
-  host version to the lockfile: the host stage installs the other tested SDKs into a temp folder.
-- **Ship prebuilt, one file per entry.** `scripts/build.mjs` bundles `src/index.ts` and `src/tui.ts` with esbuild into
-  the self-contained `dist/index.js` and `dist/tui.js`: no chunks, no relative imports, and only host-provided modules
-  external. `tsc` only typechecks. No declaration files, `.tsx` or JSX.
-- **One endpoint string.** `ENDPOINT` in `src/constants.ts` is the only place Affinity's URL is written in code; the
-  pack test points the built plugin at a fake by replacing its one occurrence in `dist/index.js`.
-- **Default rules, not hooks.** Permissions come from one block, `defaultRules(access)`, inserted through
-  `ctx.agent.transform` directly after each agent's base allow. Every tool is allowed by default: `access` is `all`,
-  `ask-changes` or `read-only`, and the tool table's classes decide what the last two restrict. A stricter agent is
-  never weakened. An agent counts as guarded only with the whole block after its base allow. Agents that miss the rules
-  are named in status with the per-agent fix, under the values that restrict, never patched, and the fix never goes in
-  the top-level `permissions`.
-- **Transforms are cheap, synchronous and never throw.** Record failures for status instead.
-- **Errors** read `CODE: What happened. Next step: What to do.`, built by `affinityError`, `errorText` or `codeText`.
-  `CODES` in `src/constants.ts` is the one table: the helpers take its `PluginCode`, so a code outside it does not
-  compile, and the README's `Errors` table is checked equal to it in both directions. Codes have no
-  service prefix; shared failures use the shared names (`HOST_UNTESTED`, `OPTIONS_INVALID`, `STATUS_UNAVAILABLE`,
-  `SKILLS_INVALID`).
-- **Status.** `src/status.ts` builds one model for `/affinity-status`, the `/affinity` dialog and the status RPC. The
-  RPC keeps the fields every plugin of this family shares, `version`, `host` (`version`, `range`, `tested`), `state`,
-  `unguardedAgents` and `nextStep`, under those names. It never shows OpenCode's text for a needed sign-in, cuts a
-  failure's reason to one line of 160 characters with `src/redact.ts` (no credentials, URL queries or tokens), and names
-  at most 20 unknown tools, plain names only. A status it cannot read is the declared RPC error `unavailable`, with a
-  next step. Status makes no Affinity call: the account comes only from `get_current_user` results the model or a script
-  asked for. For a first sign-in, status gives the admin step, because OpenCode tells
-  plugins nothing about a sign-in Affinity refused.
-- **A user's own server entry** is read for its type, URL and whether `oauth` is `false`, never its `headers`, which
-  may hold an API key.
-- **`src/affinity-tools.ts` is the one record of Affinity's tools**, and has no runtime imports. Everything else
-  derives from it; `jelly.tools` and the skills are checked against it. `src/constants.ts` has no imports at all:
-  `scripts/check.mjs` loads it with Node's type stripping.
-- **The CRM holds other people's personal data.** Tests, fixtures, docs and skills use only invented people, firms and
-  companies. The skills read contact details, relationship scores and inferred connections only for the question
-  asked, label Affinity's scores and AI output as Affinity's, profile no one, keep calls few against the firm's shared
-  API quota, let their own rules win over Affinity's playbook text, and say whom a change reaches before it asks.
-- **The `jelly` section** of `package.json` declares every known tool, the skills, the sign-in, a one-line `summary`
-  and the `icon`, with only the keys Jelly reads: its contracts drop an unknown top-level key, and refuse an unknown key
-  inside a tool, sign-in or `contributes` entry. `test/unit/jelly.test.ts` keeps it in step with the tool lists and the
-  default rules.
-- **The icon** is Affinity's own mark: `assets/icon.svg` is Affinity's knot symbol, its path data unchanged from the
-  logo affinity.co serves, in white on Affinity's aubergine as in Affinity's own app icon, with the `icon-128.png` and
-  `icon-256.png` rasters rendered from it. `opencode.icons` declares all three, `opencode.vendor` names Affinity with
-  `mark: true`, and the README carries the trademark line. Don't redraw or recolour it. `scripts/check-icons.mjs` is the kit's check, copied verbatim, and is the
-  one definition of a safe icon: it runs in the `icons` stage of `npm run check`.
-- **TypeScript.** No enums, namespaces or parameter properties. `import type` for types, `.js` in relative imports.
-- **The tool table.** `src/affinity-tools.ts` is the one record, and `test/unit/affinity-tools-list.json` is a raw
-  `tools/list` response (`{ "tools": [ { "name", "description", "inputSchema"?, "annotations"? } ] }`) holding what the
-  server lists. Replacing it with a saved response is the whole reconcile, and the drift test names each difference;
-  `npm run drift -- <saved.json>` reports the rest.
-- **The tools RPC.** The transport is the source contract's `tools-rpc` module, pinned in `package-lock.json` and
-  bundled; `src/tools-rpc.ts` holds only Affinity's part. Never copy the module. Its methods are every known tool
-  in `src/affinity-tools.ts`, by exact name and with its class: the reads (the workflow playbooks among them), the writes
-  and the eleven destructive tools, and never an unknown tool. A write or a destructive tool is a method but runs only on a resolved
-  `allow`. Keep the RPC id `affinity.crm.tools` and its method names stable: scripts call them by name.
-- **The meetings source.** `package.json`'s `sources` declares `affinity.meetings` and the list snapshot `affinity.companies` (`output: "list"`, the existing `search_all_companies` read through `events_list`, not a second client). `affinity.meetings` is not renamed. `src/events.ts` serves both with the
-  source contract's `events` and `cursor` modules, never copies. `permission.operations` is exactly what the reads
-  call, and `npm run conformance` must stay ok. An event carries metadata only: ids, start, title, the people Affinity
-  matched (their Affinity person id and name); `url` stays null, since Affinity's meetings have no link. Never an email address, phone number, note, transcript or
-  relationship score: `text` stays empty. Each read counts against the firm's quota, so a listing asks who is signed
-  in only when no record exists for the sign-in (after a restart, which nothing keeps: one `get_current_user` call, the
-  declared identity operation, kept for the sign-in; never make a listing depend on a probe in this process, because
-  Memory probes only at bind; listings at once share one call, and a read that started before a clear stores nothing) and never makes more than `MAX_CALLS` calls to read meetings: one that runs out returns
-  what it listed with a cursor that carries on, never an error. Declare or send no key a
-  consumer on source-contract 0.1 refuses (`removals[]`, `owner.verified`, `identityRules`, `accounts.server`,
-  `readsIdentity`, a price's `conditions` or `min`, an empty `identity`) until the consumers are on 0.2.
-- **Tests.** Unit tests use narrow `Pick<Plugin.Context, ...>` fakes. Host tests use the public `@opencode/sdk` with
-  `OpenCode.create({ app: { version } })`, a loopback fake server and the temp root from `test/host/isolate.ts`.
-  Every temp root of the host and pack tests is a git repository under the system's `/tmp`, never under `TMPDIR` or
-  `HOME`, so OpenCode never finds a `.opencode` folder of whoever runs them; each stock server has its own port.
-  Never sign in to Affinity or call its API from a check.
-- **Text.** Model-facing text and docs use plain language and describe what the code does now: no process
-  narrative, test counts, machine-local paths, secrets or personal data.
-- **Releases** come only from `.github/workflows/release.yml` ("Releasing" in [CONTRIBUTING.md](CONTRIBUTING.md)). A
-  release-prep PR sets `version` in `package.json` and the install specs and runs `node scripts/changelog.mjs release`;
-  once it is on `master` and CI passed, start the release with
-  `gh workflow run release.yml --ref master -f sha=<its full sha>`. The workflow builds `dist/`, makes the release
-  commit on a temporary `release/v<version>` branch, checks and stages everything, and waits for the owner to approve
-  the `release` environment; only then does it create the tag `v<version>` and the GitHub Release. Never push a tag or a
-  `release/*` branch, and never commit, tag or publish a release by hand. Agents never approve a release, never call the
-  deployment-approval API, and never bypass a ruleset or the environment.
-- **No personal email in anything we publish.** Every commit is authored and committed as
-  `joe-broadhead <91376460+joe-broadhead@users.noreply.github.com>`, except the release commit and tag, which the
-  release workflow makes as `github-actions[bot]`. Before committing or tagging, check that
-  `git config user.email` is that address: a fresh clone inherits the machine's global identity, which is not that
-  address. Never commit, tag or publish with a work or personal address, or with a local hostname.
-- **One check command.** `npm run check` passes before every commit. Never skip, weaken or delete a test to get
-  green.
+- **Public API only.** Use only the public `@opencode/plugin` 2.4.1 API. `opencode.host` in `package.json` and
+  `SUPPORTED_HOST` in `src/constants.ts` both say exactly `>=2.4.1 <2.5.0`, never `^2.4.1`. `TESTED_HOSTS` is
+  `["2.4.1"]`: status calls only that release tested, and the host and pack stages and CI run on it.
+- **The host packages are devDependencies pinned to exactly `2.4.1`.** `@opencode/client`, `@opencode/plugin` and
+  `@opencode/sdk` are the only host packages the checks compile against. Do not add another host package or a runtime
+  dependency: the bundles are self-contained.
+- **One name.** Every install line, badge, link and source constant names `we-the-rebel-alliance/affinity-plugin` and
+  `master`. The package name is `@we-the-rebel-alliance/affinity-plugin`; `src/events.ts` (`PACKAGE`) and
+  `src/options.ts` (`EXAMPLE`) are the source constants to keep in step.
+- **Fixed context.** `NAMESPACE_DESCRIPTION` in `src/constants.ts` is at most 400 characters, and each skill
+  description at most 300. No tool is pinned, and there is no per-request context, prompt or compaction hook. The one
+  tool hook records the account from `get_current_user` results and adds no text.
+- **One tool table.** `src/affinity-tools.ts` records Affinity's reads, workflow playbooks, writes, destructive tools
+  and parameters. The default rules, the tools RPC's methods, status and the fake servers derive from it. Affinity's
+  tools come from its MCP server; do not hard-code a second list.
+- **The meetings source.** `src/events.ts` serves `events_list` and `probe`, the tools RPC methods, and adds
+  `events_list` as the `affinity_events_list` tool (`tools.affinity.events_list`). Keep the tool, the RPC method and
+  `SOURCE_METHODS` in step.
+- **No secrets.** No token, key, real CRM record or personal data in the repository, a fixture, a log or an error.
+  Status and errors show only a redacted line, and URL query strings never appear.
+- **Docs and skills** describe behaviour, never who decided it, and name no lane. Skills point at files under
+  `https://github.com/we-the-rebel-alliance/affinity-plugin/blob/master/`.
+- **Checks.** `npm run check` runs typecheck, unit, conformance, the release kit, build, icons, host, pack, forbidden,
+  copies and the package whitelist. Run it before every commit. `bun test ./test/unit` and
+  `npx tsc --noEmit -p tsconfig.json` are the fast loops.
+- **Never push to `master`.** Work on a branch, open a pull request, and let CI pass first.
+- **Do not edit a hash-pinned copy.** `scripts/check-copies.mjs` pins `test/support/jelly-settings.ts`, the release kit
+  scripts, `scripts/jelly-family-block.md`, `scripts/tested-hosts.mjs` and the rest of the kit. Change a copy in every
+  plugin at once, or leave it for the contract adoption.
+- **`sources` and `jelly` are temporary.** The plugin-contract v0 adoption replaces both keys. Do not add a new app to
+  either, and do not build behaviour that reads them at runtime.
 
 ## Forbidden in this repository
 
-`scripts/check-forbidden.mjs` enforces this list in `src/`, `test/`, `scripts/` and `dist/`:
+The forbidden scan (`scripts/check-forbidden.mjs`) rejects these in `src/`, `test/`, `scripts/` and `dist/`:
 
-- internal wording: a decision attributed to the owner, the lead or a reviewer; a lane's name or identifier; and a
-  `hey-jelly` issue reference;
-- dispatch-lease, catalog-ownership and text-only markers, and tool `options.mcp` delegation;
-- `Plugin.image` and profile images;
-- imported OAuth grants;
-- the V1 plugin API: `@opencode-ai/*` packages and hooks such as `tool.execute.before`, `chat.message` or
-  `permission.ask`;
-- the deprecated `ctx.generate.text` and `experimental.policies`;
-- importing `@opencode/ai`;
-- a permission hook, except the one `permission.hook("evaluate")` of the source contract's `tools-rpc` module, in the
-  bundle that inlines it (`dist/index.js`), exactly once: it turns an `ask` on one of the tools RPC's own script calls in flight into a deny,
-  because no one can answer it, and touches nothing else;
-- references to private host source or host checkouts;
-- machine-local home and temp paths;
-- `.tsx` or `.jsx` files in `dist/`.
-
-The pack test also rejects anything in `dist/` other than the two bundles, any relative, dynamic or `require` import in
-them, and any import of a module OpenCode does not provide.
+- the V1 plugin API (`@opencode-ai/*`), V1 hooks (`tool.execute.before`, `tool.execute.after`, `chat.message`,
+  `chat.params`, `permission.ask`), and private host source or host checkouts;
+- `ctx.generate.text`, `experimental.policies`, imported OAuth grants, `Plugin.image` and profile images;
+- a second `@opencode/ai` import: the host provides `@opencode/plugin` only;
+- a permission hook that escalates access, except the tools RPC's own `evaluate` hook that turns an unattended ask into
+  a deny; default rules go through `ctx.agent.transform`;
+- machine-local paths, the family's working folders and the owner's private names;
+- internal wording: who made a decision, a review's author, a lane, or a `hey-jelly` issue reference.

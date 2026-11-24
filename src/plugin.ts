@@ -4,7 +4,7 @@ import { reasonOf } from "./redact.js"
 import { errorText, NAMESPACE_DESCRIPTION, OAUTH_SCOPE, PLUGIN_ID, SERVER_NAME } from "./constants.js"
 import { checkHost } from "./host-version.js"
 import { registerToolsRpc } from "@we-the-rebel-alliance/source-contract/tools-rpc"
-import { eventsMethod, probeMethod, signIns } from "./events.js"
+import { eventsMethod, eventsTool, probeMethod, signIns } from "./events.js"
 import { watchIntegration } from "./integration.js"
 import { parseOptions } from "./options.js"
 import { defaultRules, registerDefaultRules } from "./permissions.js"
@@ -103,8 +103,22 @@ export function createAffinityPlugin(seam: AffinitySeam) {
       })
       // The plugin's own server, or the user's adopted one; a server at another URL is not Affinity's.
       const owned = () => source?.type === "plugin" || source?.type === "adopted"
-      // Code Mode's catalog describes the server's namespace with this text; a server at another URL keeps its own.
-      await ctx.tool.transform((editor) => void (source?.type === "conflict" ? undefined : editor.namespace({ name: SERVER_NAME, description: NAMESPACE_DESCRIPTION })))
+      // Affinity's meetings source (package.json's `sources`): events_list and probe, the tools RPC's methods and, for
+      // events_list, also a tool the model sees. The sign-in is OpenCode's credential for the server: probe records who
+      // it is, and a listing checks against that.
+      const signIn = async () => {
+        const server = (await ctx.mcp.list()).data.find((entry) => entry.name === SERVER_NAME)
+        const connection = server?.integrationID ? await ctx.integration.connection.active(server.integrationID) : undefined
+        return connection?.type === "credential" ? connection.id : undefined
+      }
+      const events = { tool: ctx.tool, mcp: ctx.mcp, permission: ctx.permission, owned, signIn, signIns: signIns() }
+      // Code Mode's catalog describes the affinity namespace with this text, and the meeting source's events_list is one
+      // tool in it; a server at another URL keeps its own description and gets no plugin tool.
+      await ctx.tool.transform((editor) => {
+        if (source?.type === "conflict") return
+        editor.namespace({ name: SERVER_NAME, description: NAMESPACE_DESCRIPTION })
+        editor.add(eventsTool(events))
+      })
       await registerDefaultRules(ctx.agent, defaultRules(options.access), report("rules"))
       const account = await watchAccount(ctx, () => source?.type === "adopted" && source.signIn === "own", owned)
       const own = skills.map((skill) => ({ id: skill.id, path: skill.path }))
@@ -114,14 +128,6 @@ export function createAffinityPlugin(seam: AffinitySeam) {
       await registerSkills(ctx.skill, skills)
       await registerStatusCommand(ctx, read)
       await registerStatusRpc(ctx.rpc, read)
-      // Affinity's meetings source (package.json's `sources`): events_list and probe, tools RPC methods only. The sign-in
-      // is OpenCode's credential for the server: probe records who it is, and a listing checks against that.
-      const signIn = async () => {
-        const server = (await ctx.mcp.list()).data.find((entry) => entry.name === SERVER_NAME)
-        const connection = server?.integrationID ? await ctx.integration.connection.active(server.integrationID) : undefined
-        return connection?.type === "credential" ? connection.id : undefined
-      }
-      const events = { tool: ctx.tool, mcp: ctx.mcp, permission: ctx.permission, owned, signIn, signIns: signIns() }
       // Scripts call every known tool, and the source's events_list and probe, with no model, as a session and its agent.
       const stopTools = await registerToolsRpc(ctx as never, {
         plugin: PLUGIN,

@@ -112,6 +112,8 @@ export interface FakeMcp {
   readonly markers: (string | undefined)[]
   /** The `authorization` header of every request. */
   readonly authorizations: (string | undefined)[]
+  /** Every MCP method the server saw, in order: `server/discover`, `tools/list`, `tools/call`, ... */
+  readonly methods: string[]
   close(): Promise<void>
 }
 
@@ -123,11 +125,17 @@ export async function startFakeMcp(options: FakeMcpOptions = {}): Promise<FakeMc
   const inputs: { tool: string; arguments: unknown }[] = []
   const markers: (string | undefined)[] = []
   const authorizations: (string | undefined)[] = []
+  const methods: string[] = []
   const answer = (message: Message, path: string) => {
-    const reply = (result: unknown) => ({ jsonrpc: "2.0", id: message.id, result })
+    // Revision 2026-07-28 requires every result to carry resultType; the modern probe negotiates that revision.
+    const reply = (result: unknown) => ({ jsonrpc: "2.0", id: message.id, result: { resultType: "complete", ttlMs: 0, cacheScope: "private", ...(result as object) } })
     switch (message.method) {
       case "initialize":
         return reply({ protocolVersion: message.params?.protocolVersion, capabilities: { tools: {} }, serverInfo: { name: "fake-affinity", version: "0.0.0" } })
+      // OpenCode 2.4 probes a server with no `protocol` here first, and negotiates the modern era without an
+      // initialize. A 401 ends the attempt, as Affinity's does before a sign-in.
+      case "server/discover":
+        return reply({ ttlMs: 0, cacheScope: "private", supportedVersions: ["2026-07-28"], capabilities: { tools: {} }, instructions: "Fake Affinity server text." })
       case "tools/list":
         return reply({ tools: options.catalog === "affinity" ? CATALOG : TOOLS })
       case "tools/call": {
@@ -230,18 +238,20 @@ export async function startFakeMcp(options: FakeMcpOptions = {}): Promise<FakeMc
     if (route === "/auth/oauth2/token") return void response.writeHead(401, { "content-type": "application/json" }).end(JSON.stringify({ error: "invalid_client" }))
     markers.push(header(request, "x-affinity-test"))
     authorizations.push(header(request, "authorization"))
+    // Read the body first, so a 401'd probe still records the method the client tried.
+    const parsed = request.method === "POST" ? (JSON.parse(await read(request)) as Message | Message[]) : undefined
+    for (const message of parsed === undefined ? [] : Array.isArray(parsed) ? parsed : [parsed]) if (typeof message.method === "string") methods.push(message.method)
     if (fake.challenge) {
       const metadata = `${fake.origin}/.well-known/oauth-protected-resource/mcp`
       return void response
         .writeHead(401, { "content-type": "application/json", "www-authenticate": `Bearer resource_metadata="${metadata}", scope="${fake.challengeScope}"` })
         .end(JSON.stringify({ error: "invalid_token" }))
     }
-    if (request.method !== "POST") return void response.writeHead(405, { allow: "POST" }).end()
+    if (request.method !== "POST" || parsed === undefined) return void response.writeHead(405, { allow: "POST" }).end()
     const path = new URL(request.url ?? "/", "http://127.0.0.1").pathname
-    const body = JSON.parse(await read(request)) as Message | Message[]
-    const replies = (Array.isArray(body) ? body : [body]).filter((message) => message.id !== undefined).map((message) => answer(message, path))
+    const replies = (Array.isArray(parsed) ? parsed : [parsed]).filter((message) => message.id !== undefined).map((message) => answer(message, path))
     if (!replies.length) return void response.writeHead(202).end()
-    response.writeHead(200, { "content-type": "application/json" }).end(JSON.stringify(Array.isArray(body) ? replies : replies[0]))
+    response.writeHead(200, { "content-type": "application/json" }).end(JSON.stringify(Array.isArray(parsed) ? replies : replies[0]))
   })
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve))
   const { port } = server.address() as AddressInfo
@@ -254,6 +264,7 @@ export async function startFakeMcp(options: FakeMcpOptions = {}): Promise<FakeMc
     inputs,
     markers,
     authorizations,
+    methods,
     close: () => new Promise<void>((resolve) => (server.closeAllConnections(), server.close(() => resolve()))),
   })
   return fake

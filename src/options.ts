@@ -13,7 +13,7 @@ interface Options {
   readonly clientId?: string
 }
 
-const EXAMPLE = `"plugins": [{ "package": "github:joe-broadhead/opencode-affinity#v0.0.8", "options": { "access": "ask-changes" } }]`
+const EXAMPLE = `"plugins": [{ "package": "github:we-the-rebel-alliance/affinity-plugin#v0.0.0", "options": { "access": "ask-changes" } }]`
 const ACCEPTED = {
   allowUntestedHost: "true or false (the default)",
   access: `${ACCESS.map((value) => `"${value}"`).join(", ")}, with "all" the default`,
@@ -56,8 +56,8 @@ export function parseOptions(raw: unknown): Options {
 }
 
 /**
- * The client ID, trimmed, or undefined when it is absent or empty: Jelly saves a cleared text setting as "". Anything
- * else must be a UUID, and an error shows at most its first 8 characters, in case a secret was pasted by mistake.
+ * The client ID, trimmed, or undefined when it is absent or empty: an empty value counts as unset. Anything else must
+ * be a UUID, and an error shows at most its first 8 characters, in case a secret was pasted by mistake.
  */
 function parseClientId(value: unknown): string | undefined {
   if (value === undefined) return undefined

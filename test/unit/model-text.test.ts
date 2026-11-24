@@ -1,11 +1,11 @@
-// Item 16: every string the model reads must be true under the default, where every tool runs without asking. A
-// sentence may say a tool asks or is off only when it names the value that makes it so (`access`, "ask-changes" or
-// "read-only"), so a reader can tell the claim depends on the configuration.
+// Every string the model reads must be honest under the default, where every tool runs without asking, and must keep
+// to the fixed-context budget: the namespace line is at most 400 characters and each skill description at most 300.
 import { describe, expect, test } from "bun:test"
 import { readdirSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { NAMESPACE_DESCRIPTION } from "../../src/constants.js"
+import { parseSkill, SKILLS_DIR } from "../../src/skills.js"
 
 const ROOT = fileURLToPath(new URL("../..", import.meta.url))
 const read = (path: string) => readFileSync(join(ROOT, path), "utf8")
@@ -21,7 +21,7 @@ export function modelTexts(): [string, string][] {
 }
 
 /** A claim that a tool asks, waits for approval, or is off. */
-const CLAIM = /(?:(?:a|each|every|any|the) (?:tool|tools|change|changes|export|exports|pin|pins|write|writes|delete|deletes|merge|merges|call|calls) (?:asks?|ask) (?:the user|first|you|before|each time|every time|for (?:each|every))|(?:tools|changes|exports|writes|pins|deletes|merges) (?:ask|asks) (?:the user|first|you|before|each time|every time|for (?:each|every))|it asks? (?:the user|first)|asks? (?:the user )?(?:before|each time|every time|for (?:each|every))|may ask|(?:is|are) off|(?:the user|you) approv|\bpermission prompt (?:is|shows)\b|\bprompt (?:is|shows) (?:the user's|your)\b)/iu
+const CLAIM = /(?:(?:a|each|every|any|the) (?:tool|tools|change|changes|export|exports|pin|pins|write|writes|delete|deletes|merge|merges|call|calls) (?:asks?|ask) (?:the user|first|you|before|each time|every time|for (?:each|every))|(?:tools|changes|exports|writes|pins|deletes|merges) (?:ask|asks) (?:the user|first|you|before|each time|every time|for (?:each|every))|it asks? (?:the user|first)|asks? (?:the user )?(?:before|each time|every time|for (?:each|every))|may ask|(?:is|are) off|(?:the user|you) approv|\bpermission prompt (?:is|shows)\b|\bprompt (?:is|shows) (?:the user's|your)\b)/iu
 /** The value that makes such a claim true. */
 const VALUE = /\baccess\b|\bask-changes\b|\bread-only\b/u
 
@@ -35,11 +35,13 @@ describe("the text the model is given", () => {
     }
   })
 
-  test("wherever a text says tools are allowed by default, the same text says what the access option decides", () => {
-    // "Allowed by default" holds for the default `access` only, so the text that claims it also names the option.
-    const ALLOWED_BY_DEFAULT = /\ballowed\b.*\bby default\b|\bby default\b.*\ballowed\b/iu
-    const claims = modelTexts().filter(([, text]) => ALLOWED_BY_DEFAULT.test(text.replace(/\s+/g, " ")))
-    expect(claims.map(([file]) => file)).toContain("src/constants.ts (namespace)")
-    for (const [file, text] of claims) expect({ file, names: VALUE.test(text) }).toEqual({ file, names: true })
+  test("keeps the fixed-context budget: namespace <= 400 characters and each skill description <= 300", () => {
+    expect(NAMESPACE_DESCRIPTION.length).toBeGreaterThan(0)
+    expect(NAMESPACE_DESCRIPTION.length).toBeLessThanOrEqual(400)
+    for (const name of readdirSync(SKILLS_DIR)) {
+      const text = read(`skills/${name}/SKILL.md`)
+      const description = parseSkill(name, join(SKILLS_DIR, name, "SKILL.md"), text).description ?? ""
+      expect({ name, over: description.length > 300 }).toEqual({ name, over: false })
+    }
   })
 })

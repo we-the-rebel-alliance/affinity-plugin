@@ -4,7 +4,7 @@ Every option is optional. The smallest setup is one entry in `plugins`:
 
 ```json
 {
-  "plugins": [{ "package": "github:joe-broadhead/opencode-affinity#v0.0.8" }]
+  "plugins": [{ "package": "github:we-the-rebel-alliance/affinity-plugin#v0.0.0" }]
 }
 ```
 
@@ -12,7 +12,7 @@ To set options, use the object form:
 
 ```json
 {
-  "plugins": [{ "package": "github:joe-broadhead/opencode-affinity#v0.0.8", "options": { "allowUntestedHost": true } }]
+  "plugins": [{ "package": "github:we-the-rebel-alliance/affinity-plugin#v0.0.0", "options": { "allowUntestedHost": true } }]
 }
 ```
 
@@ -33,18 +33,18 @@ from the model. The classes come from `src/affinity-tools.ts`, so the value deci
 - Type: `true` or `false`.
 - Default: `false`.
 
-The plugin supports OpenCode `>=2.2.3 <2.4.0`, the range `opencode.host` in `package.json` declares, and every check
-runs on 2.2.3, 2.2.4, 2.2.5, 2.2.6, 2.2.7, 2.3.0, 2.3.1 and 2.3.2, the tested releases. Status shows the version, whether it is tested and the supported
-range in its `OpenCode` row, for example `2.2.5 (tested; supported range >=2.2.3 <2.4.0)`.
+The plugin supports OpenCode `>=2.4.1 <2.5.0`, the range `opencode.host` in `package.json` declares, and every check
+runs on 2.4.1, the tested release. Status shows the version, whether it is tested and the supported range in its
+`OpenCode` row, for example `2.4.1 (tested; supported range >=2.4.1 <2.5.0)`.
 
 - **A tested release:** the plugin starts.
-- **Another release inside the range, such as 2.2.99:** the plugin starts too. Status marks the version `untested`, and
+- **Another release inside the range, such as 2.4.2:** the plugin starts too. Status marks the version `untested`, and
   the status RPC's `host.tested` is `false`. The next step is the same as on a tested release.
-- **Outside the range, including 2.4.0, prereleases and development builds:** the plugin refuses to start, and
+- **Outside the range, including 2.5.0, 2.4.0, prereleases and development builds:** the plugin refuses to start, and
   `/plugins` shows:
 
   ```text
-  HOST_UNTESTED: This plugin supports OpenCode >=2.2.3 <2.4.0, found 2.4.0. Next step: Use OpenCode >=2.2.3 <2.4.0, or set the plugin option "allowUntestedHost": true to run anyway.
+  HOST_UNTESTED: This plugin supports OpenCode >=2.4.1 <2.5.0, found 2.5.0. Next step: Use OpenCode >=2.4.1 <2.5.0, or set the plugin option "allowUntestedHost": true to run anyway.
   ```
 
 - **Outside the range with `"allowUntestedHost": true`:** it starts anyway, and `/affinity-status` and `/affinity` show
@@ -59,9 +59,8 @@ To narrow what the model may do in Affinity, use permission rules, or a read-onl
   `00000000-0000-0000-0000-000000000000`.
 - Default: none. OpenCode signs in with its client URL, `https://opencode.ai/oauth/opencode/client.json`.
 
-Set it when your organisation signs in through its own OAuth app instead of adding OpenCode's client URL; the README's
-[Organisation rollout](https://github.com/joe-broadhead/opencode-affinity/blob/HEAD/README.md#organisation-rollout)
-says how to register the app (Public, PKCE and no secret; the redirect URIs `http://127.0.0.1/callback`,
+Set it when your organisation signs in through its own OAuth app instead of adding OpenCode's client URL; see
+[Your organisation's own OAuth app](#your-organisations-own-oauth-app) to register the app (Public, PKCE and no secret; the redirect URIs `http://127.0.0.1/callback`,
 `http://localhost/callback` and `http://127.0.0.1/mcp/oauth/callback`; the scopes `mcp`, `mcp.read` and
 `offline_access`). The plugin then registers the server with the app's client ID:
 
@@ -76,7 +75,7 @@ the whole organisation, set it once in the system config's plugin entry
 ```json
 {
   "plugins": [
-    { "package": "github:joe-broadhead/opencode-affinity#v0.0.8", "options": { "clientId": "<the app's client ID>" } }
+    { "package": "github:we-the-rebel-alliance/affinity-plugin#v0.0.0", "options": { "clientId": "<the app's client ID>" } }
   ]
 }
 ```
@@ -84,9 +83,9 @@ the whole organisation, set it once in the system config's plugin entry
 - **Precedence:** a user's own [`mcp.servers.affinity`](#your-own-mcpserversaffinity) wins. The plugin adopts it
   unchanged, ignores the option, and the `Sign-in client` row says "the clientId option is ignored because your entry
   wins".
-- **Validation:** surrounding spaces are trimmed, and an empty value counts as unset (Jelly saves a cleared setting
-  that way). Anything else that is not a UUID stops the plugin with `OPTIONS_INVALID`, which shows only the value's
-  first 8 characters, or only its type when it is not text.
+- **Validation:** surrounding spaces are trimmed, and an empty value counts as unset. Anything else that is not a
+  UUID stops the plugin with `OPTIONS_INVALID`, which shows only the value's first 8 characters, or only its type when
+  it is not text.
 - **Not a secret:** a client ID is public, like the client URL, but status shows only its first 8 characters, such as
   "Sign-in client: your organisation's OAuth app 00000000… (the clientId option)".
 - Credentials are kept per server name and URL, so switching between the client URL and the option keeps the stored
@@ -105,7 +104,7 @@ With the [`clientId`](#clientid) option, `oauth` also carries `client_id`.
 The scope is the one Affinity's sign-in challenge asks for: changes (`mcp`), reads (`mcp.read`) and a refresh token
 (`offline_access`). The plugin pins it, so a change to Affinity's challenge can't drop the refresh token. OpenCode signs
 in with its own client metadata document, `https://opencode.ai/oauth/opencode/client.json`, which an Affinity admin
-adds once per organisation (see the README's Organisation rollout), unless `clientId` names your organisation's own
+adds once per organisation (see [Your organisation's own OAuth app](#your-organisations-own-oauth-app)), unless `clientId` names your organisation's own
 app. OpenCode's defaults apply to everything else.
 
 To change anything else, define `mcp.servers.affinity` yourself at Affinity's URL. The plugin then **adopts** your entry
@@ -210,9 +209,8 @@ gives the next step:
 
 OpenCode asserts every MCP call itself, with the action `affinity_<tool>` and the resource `*`. The plugin adds its
 block to every agent that starts with the base rule `{ "action": "*", "resource": "*", "effect": "allow" }`, directly
-after that rule. The README prints the whole block for all three `access` values in
-[Permissions](https://github.com/joe-broadhead/opencode-affinity/blob/HEAD/README.md#permissions); `/affinity-status`
-prints the one in force, and its `Agents without default rules` row prints it as a list to paste.
+after that rule. `/affinity-status` prints the whole block for the `access` value in force, and its `Agents without default rules` row
+prints it as a list to paste.
 
 `READ_TOOLS` in `src/affinity-tools.ts` lists Affinity's read tools, including its seventeen workflow playbooks such as
 `affinity_affinity_meeting_prep`, which return Affinity's instructions for a task as text. `WRITE_TOOLS` lists its
@@ -394,7 +392,7 @@ Every error from the plugin reads `CODE: What happened. Next step: What to do.`
 | Code | When | Next step |
 | --- | --- | --- |
 | `OPTIONS_INVALID` | Setup: an option is unknown or has a wrong value. `/plugins` shows the message, which names the option and the accepted values. | Fix the plugin options in `opencode.json`. |
-| `HOST_UNTESTED` | Setup: OpenCode is outside `>=2.2.3 <2.4.0`, and `allowUntestedHost` is not set. | Use OpenCode `>=2.2.3 <2.4.0`, or set `"allowUntestedHost": true`. |
+| `HOST_UNTESTED` | Setup: OpenCode is outside `>=2.4.1 <2.5.0`, and `allowUntestedHost` is not set. | Use OpenCode `>=2.4.1 <2.5.0`, or set `"allowUntestedHost": true`. |
 | `STATUS_UNAVAILABLE` | `/affinity-status`, `/affinity` or the status RPC: the status could not be read, or the plugin is not running on the server. The RPC answers with its error `unavailable`. | The message's own next step: restart OpenCode and run the command again, or, when the plugin is not running, run `/plugins` to see why. |
 | `SKILLS_INVALID` | Setup: a skill file is missing or broken. The plugin still starts; status shows the problem. | Reinstall the plugin. |
 | `SERVER_NOT_REGISTERED` | Setup: the `affinity` server could not be registered. Status shows the problem. | Restart OpenCode. |
@@ -403,7 +401,7 @@ Every error from the plugin reads `CODE: What happened. Next step: What to do.`
 For example:
 
 ```text
-OPTIONS_INVALID: Unknown option "apiKey". Accepted options: "allowUntestedHost". Next step: Fix the plugin options in opencode.json, for example "plugins": [{ "package": "github:joe-broadhead/opencode-affinity#v0.0.8", "options": { "allowUntestedHost": true } }].
+OPTIONS_INVALID: Unknown option "apiKey". Accepted options: "allowUntestedHost". Next step: Fix the plugin options in opencode.json, for example "plugins": [{ "package": "github:we-the-rebel-alliance/affinity-plugin#v0.0.0", "options": { "allowUntestedHost": true } }].
 ```
 
 Errors from Affinity's server and from OpenCode pass through unchanged, such as `Insufficient scope` on a read-only
@@ -430,12 +428,11 @@ model. It holds no token, no header and no URL query, and makes no Affinity call
 | `access` | `all`, `ask-changes` or `read-only`: the value the default rules were generated for |
 | `tools` | How many Affinity tools OpenCode lists that the plugin knows |
 | `destructiveTools` | The listed tools of the destructive class, such as `send_feedback`. Under `all` they run like everything else, `ask-changes` asks for each, and `read-only` denies them. |
-| `deniedTools` | The family field's old name; it carries the same list as `destructiveTools`. |
 | `listing` | True while a server that connected moments ago lists no tools yet. The next step is then to run `/affinity-status` again in a few seconds. |
 | `unknownCount`, `unknownTools` | How many of them the plugin does not know, and at most 20 of their names, only those made of lowercase letters, digits and `_` |
 | `unguardedAgents` | Agents with a base allow and no block, under `ask-changes` or `read-only`; empty under `all`, and empty for an agent whose own rules already ask or deny for every Affinity tool. |
 | `shadowedSkills` | Present only when a skill with one of the plugin's ids, such as your own `affinity` skill, replaces the plugin's: each `id` and the `path` OpenCode loads instead |
-| `host` | `version` (`null` if OpenCode reports none), `range` (the supported range) and `tested` (true only for 2.2.3, 2.2.4, 2.2.5, 2.2.6, 2.2.7, 2.3.0, 2.3.1 and 2.3.2) |
+| `host` | `version` (`null` if OpenCode reports none), `range` (the supported range) and `tested` (true only for 2.4.1) |
 | `problems` | Setup problems, each `CODE: What happened. Next step: What to do.` |
 | `nextStep` | Exactly one next step: the `Next step` row, `Nothing to do.` when nothing is needed |
 

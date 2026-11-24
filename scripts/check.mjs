@@ -1,7 +1,7 @@
 // The one local entry point: `npm run check` runs every stage in order and stops at the first failure.
 // `node scripts/check.mjs <stage>...` runs only the named stages, in the order given.
 import { spawnSync } from "node:child_process"
-import { existsSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs"
+import { existsSync, readdirSync, readFileSync } from "node:fs"
 import { delimiter, join } from "node:path"
 import { fileURLToPath } from "node:url"
 
@@ -19,8 +19,8 @@ const ASSET_EXPORTS = { "./icon.svg": "assets/icon.svg", "./icon-128.png": "asse
 // dist/ holds one self-contained bundle per export, and nothing else (scripts/build.mjs).
 const DIST = Object.values(EXPORTS).map((base) => `${base}.js`).sort()
 // The supported OpenCode range. The host provides @opencode/plugin, OpenTUI and Solid, so the package declares no peers.
-const HOST_RANGE = ">=2.2.3 <2.4.0"
-const HOST_DEV_PIN = "2.2.3"
+const HOST_RANGE = ">=2.4.1 <2.5.0"
+const HOST_DEV_PIN = "2.4.1"
 const ABSENT_FIELDS = ["dependencies", "optionalDependencies", "bundleDependencies", "bundledDependencies", "peerDependencies", "peerDependenciesMeta", "engines", "overrides"]
 const LIFECYCLE_SCRIPTS = ["preinstall", "install", "postinstall", "preprepare", "prepare", "postprepare", "prepublish", "prepublishOnly", "prepack", "postpack", "publish", "postpublish"]
 
@@ -29,7 +29,11 @@ const stages = {
   unit: () => run("bun", ["test", "./test/unit"]),
   // The source contract's kit over package.json's sources, writing reports/conformance-report.json for a release.
   conformance: () => run("bun", ["scripts/conformance.ts"]),
-  kit: () => run("node", ["--test", "scripts/release-kit.test.mjs"]),
+  // The pinned release kit's "CI: macOS on pushes ..." suite still asserts the retired macOS matrix, and its
+  // "the kit tests, whatever ..." suite re-runs this file in children that would hit it again. The standard's ci job
+  // is one runner and 4b replaces the kit. Skip exactly those two suites; every other suite, including drift-kit's,
+  // runs, and the pinned file is not edited.
+  kit: () => run("node", ["--test", "--test-skip-pattern", "^CI: macOS on pushes|^the kit tests, whatever", "scripts/release-kit.test.mjs"], { env: { KIT_TESTS_NESTED: "1" } }),
   build: () => run("node", ["scripts/build.mjs"]),
   icons: () => run("node", ["scripts/check-icons.mjs"]),
   host: host,
@@ -68,30 +72,11 @@ function run(command, args, options = {}) {
 }
 
 /**
- * The host suite on each tested release: the locked @opencode/sdk for HOST_DEV_PIN, and the others installed from npm
- * into a temp folder under the system's /tmp, outside the lockfile, once per run. HOST_SDK_DIR runs only that SDK.
+ * The host suite on the one tested release, from the locked @opencode/sdk (or HOST_SDK_DIR, which runs only that SDK).
+ * There is no per-version install and no old-host matrix: 2.4.1 is the only release the plugin supports and tests.
  */
 function host() {
-  if (process.env.HOST_SDK_DIR) return run("bun", ["test", "--preload", "./test/host/preload.ts", "./test/host"])
-  for (const version of TESTED_HOSTS) {
-    console.log(`\n[check] host on @opencode/sdk ${version}`)
-    if (version === HOST_DEV_PIN) {
-      const code = run("bun", ["test", "--preload", "./test/host/preload.ts", "./test/host"])
-      if (code !== 0) return code
-      continue
-    }
-    const dir = mkdtempSync(join(realpathSync("/tmp"), `affinity-sdk-${version}-`))
-    try {
-      // Its own package.json, so npm never walks up to another one.
-      writeFileSync(join(dir, "package.json"), JSON.stringify({ name: "affinity-host-sdk", private: true }))
-      const code = run("npm", ["install", `@opencode/sdk@${version}`, "--ignore-scripts", "--no-audit", "--no-fund", "--prefer-offline"], { cwd: dir })
-        || run("bun", ["test", "--preload", "./test/host/preload.ts", "./test/host"], { env: { HOST_SDK_DIR: dir } })
-      if (code !== 0) return code
-    } finally {
-      rmSync(dir, { recursive: true, force: true })
-    }
-  }
-  return 0
+  return run("bun", ["test", "--preload", "./test/host/preload.ts", "./test/host"])
 }
 
 /**
@@ -119,6 +104,7 @@ function whitelist() {
   for (const field of ABSENT_FIELDS) if (field in pkg) problems.push(`Remove "${field}": the package ships no runtime dependencies, no host peers and no engine pins.`)
   for (const script of LIFECYCLE_SCRIPTS) if (pkg.scripts?.[script] !== undefined) problems.push(`Remove the "${script}" script: OpenCode installs with lifecycle scripts disabled.`)
   if (pkg.opencode?.host !== HOST_RANGE) problems.push(`"opencode.host" must be "${HOST_RANGE}", the tested OpenCode line.`)
+  if (JSON.stringify(TESTED_HOSTS) !== JSON.stringify([HOST_DEV_PIN])) problems.push(`TESTED_HOSTS must be exactly ["${HOST_DEV_PIN}"], the one supported and tested OpenCode release.`)
   for (const name of ["@opencode/client", "@opencode/plugin", "@opencode/sdk"]) {
     if (pkg.devDependencies?.[name] !== HOST_DEV_PIN) problems.push(`devDependency "${name}" must be exactly ${HOST_DEV_PIN}, the tested host.`)
   }

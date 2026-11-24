@@ -38,12 +38,12 @@ const hidden = (rules: readonly Rule[], action: string) => {
 
 /**
  * The host lists an MCP server's tools shortly after it connects. The registry lists the ten denied tools too; the
- * deny hides them from the model's tools and refuses them.
+ * deny hides them from the model's tools and refuses them. The plugin also adds its own `affinity_events_list` tool.
  */
 const affinityTools = (host: Host) =>
   until("Affinity's tools are registered", async () => {
     const ids = (await host.probe().tool.list()).map((tool) => tool.id).filter((id) => id.startsWith("affinity_"))
-    return ids.length === 5 + DESTRUCTIVE_TOOLS.length + 1 && ids.sort()
+    return ids.length === 5 + DESTRUCTIVE_TOOLS.length + 2 && ids.sort()
   })
 
 async function status(host: Host, sessionID: string) {
@@ -102,11 +102,16 @@ describe(`the plugin on OpenCode ${HOST_VERSION}`, () => {
     expect(plugins.find((plugin) => plugin.id === "affinity.crm")?.state.status).toBe("active")
     const { data: servers } = await host.client.mcp.list({ location: host.location })
     expect(servers.find((server) => server.name === "affinity")?.status).toEqual({ status: "connected" })
-    expect(await affinityTools(host)).toEqual([...["create_note", "get_current_user", "get_meetings", "search_persons", "search_all_companies", "shiny_new_tool", ...DESTRUCTIVE_TOOLS].map((tool) => `affinity_${tool}`)].sort())
+    expect(await affinityTools(host)).toEqual([...["create_note", "events_list", "get_current_user", "get_meetings", "search_persons", "search_all_companies", "shiny_new_tool", ...DESTRUCTIVE_TOOLS].map((tool) => `affinity_${tool}`)].sort())
     const { data: skills } = await host.client.skill.list({ location: host.location })
     expect(skills.map((skill) => skill.id).filter((id) => id.startsWith("affinity")).sort()).toEqual([...SKILL_NAMES].sort())
     const { data: commands } = await host.client.command.list({ location: host.location })
     expect(commands.map((command) => command.name)).toContain("affinity-status")
+  })
+
+  test("the fake negotiates OpenCode 2.4's modern MCP era: server/discover first, no legacy initialize", () => {
+    expect(host.fake.methods[0]).toBe("server/discover")
+    expect(host.fake.methods).not.toContain("initialize")
   })
 
   test("P1: the rules sit right after the base allow in every built-in agent, once", async () => {
@@ -282,8 +287,9 @@ describe(`the plugin on OpenCode ${HOST_VERSION}`, () => {
     expect(text).toContain(`- Connection: connected (${host.fake.url}, registered by this plugin)`)
     expect(text).toContain("- Account: not read yet")
     expect(text).toContain("- Access: Affinity grant not read yet; access all: every Affinity tool is allowed, reads and changes alike; every agent has the block\n")
-    // Every listed tool counts now, the destructive class included, and under `all` the config-only reviewer needs no fix.
-    const listed = (await affinityTools(host)).length
+    // Every listed server tool counts now, the destructive class included; the plugin's own events_list tool is not
+    // one of the server's. Under `all` the config-only reviewer needs no fix.
+    const listed = (await affinityTools(host)).filter((id) => id !== "affinity_events_list").length
     expect(text).toContain(`- Tools: ${listed} available, 1 unknown: shiny_new_tool (a tool Affinity adds is allowed at once); ${OFF} allowed like everything else\n`)
     expect(text).toContain("- Agents without default rules: none\n")
     expect(text).toContain("- Next step: Nothing to do.")
@@ -354,6 +360,34 @@ describe("the companies list snapshot", () => {
       expect(Array.isArray(page.events)).toBe(true)
     } finally {
       await listing.close()
+    }
+  }, 120_000)
+})
+
+describe("the events_list tool", () => {
+  // The source's events_list is also a tool the model sees, in the affinity namespace. It reads at every access level,
+  // as SOURCE_METHODS is allowed after the namespace pattern. Its own hosts, with a numeric tenant so its account check
+  // can name who is signed in.
+  test.each(["all", "ask-changes", "read-only"] as const)("runs as a read under access %s, in the affinity namespace", async (access) => {
+    const host = await startHost({ options: { access }, fake: { numericTenant: true } })
+    try {
+      await affinityTools(host)
+      const tool = (await host.probe().tool.list()).find((item) => item.id === "affinity_events_list")!
+      expect(tool).toMatchObject({ name: "events_list", options: { namespace: "affinity", permission: "affinity_events_list", codemode: true } })
+      expect(await effect(host, "build", "affinity_events_list")).toBe("allow")
+      const build = await session(host)
+      const before = host.fake.calls.length
+      const result = (await attempt(host, build, "build", "events_list", "reject", { account: "4821/jane.doe@example.com" })) as {
+        asked?: string
+        ok: boolean
+        result?: { output: { source: string; account: string; events: unknown[]; trust: string } }
+      }
+      expect({ asked: result.asked, ok: result.ok }).toEqual({ asked: undefined, ok: true })
+      expect(result.result!.output).toMatchObject({ source: "affinity", account: "4821/jane.doe@example.com", trust: "untrusted" })
+      expect(Array.isArray(result.result!.output.events)).toBe(true)
+      expect(host.fake.calls.slice(before)).toEqual(["get_current_user", "get_meetings"])
+    } finally {
+      await host.close()
     }
   }, 120_000)
 })
@@ -464,6 +498,7 @@ describe("a Code Mode turn that reads the account", () => {
   beforeAll(async () => {
     host = await startHost({
       options: { access: "read-only" },
+      fake: { numericTenant: true },
       config: (url) => ({
         // Code Mode on, as users run it by default: the model calls Affinity inside Code Mode's execute tool.
         mcp: { servers: { affinity: { type: "remote", url, oauth: false } } },
@@ -492,6 +527,20 @@ describe("a Code Mode turn that reads the account", () => {
     })
     expect(text).toContain("- Account: Northwind Capital\n")
     expect(text).not.toMatch(/u_fake_1|tenant_fake_1|Jane/)
+  })
+
+  test("events_list is callable inside Code Mode as tools.affinity.events_list, and reads under read-only", async () => {
+    host.fake.model.script = [{ tool: "execute", arguments: { code: 'return await tools.affinity.events_list({ account: "4821/jane.doe@example.com" })' } }]
+    const sessions = host.client.sessions as unknown as {
+      create: (input: object) => Promise<{ id: string }>
+      prompt: (input: object) => Promise<unknown>
+    }
+    const before = host.fake.calls.length
+    const sessionID = (await sessions.create({ agent: "build", location: host.location, model: { providerID: "lmstudio", id: MODEL_ID } })).id
+    await sessions.prompt({ sessionID, text: "List my Affinity meetings." })
+    const requests = host.fake.model.requests.length
+    await until("the Code Mode events_list turn ends", async () => host.fake.model.requests.length > requests && (host.fake.model.requests.at(-1) as { messages?: { role: string }[] }).messages?.some((message) => message.role === "tool"))
+    expect(host.fake.calls.slice(before)).toContain("get_meetings")
   })
 
   test("AF-5: inside execute, each denied tool is missing from the namespace call and never reaches Affinity", async () => {
@@ -604,9 +653,14 @@ describe("a server that asks for a sign-in", () => {
     expect(await statusRpc(host)).toMatchObject({ state: "connected", organisation: "Northwind Capital" })
     // The tokens stop working: the next connection gets the challenge.
     host.fake.challenge = true
+    const before = host.fake.methods.length
     const mcp = host.client.mcp as unknown as Record<"connect" | "disconnect", (input: object) => Promise<unknown>>
     await mcp.disconnect({ server: "affinity", location: host.location })
     await mcp.connect({ server: "affinity", location: host.location }).catch(() => {})
+    // The 401 probe ends the attempt: no legacy initialize follows.
+    const attempted = host.fake.methods.slice(before)
+    expect(attempted[0]).toBe("server/discover")
+    expect(attempted).not.toContain("initialize")
     const server = await until("the server needs a sign-in", async () => {
       const { data } = await host.client.mcp.list({ location: host.location })
       const found = data.find((item) => item.name === "affinity")

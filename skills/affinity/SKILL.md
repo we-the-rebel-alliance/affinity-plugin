@@ -1,9 +1,9 @@
 ---
 name: affinity
-description: Load before the first Affinity tool call (affinity_*, tools.affinity.*). For the firm's Affinity CRM - companies, founders, LPs, co-investors and deals, pipeline lists and stages, who at the firm knows someone and warm intro paths, CRM notes, reminders on records, meetings and AI Notetaker transcripts held in Affinity, prep for a meeting or call with a company, founder or LP the firm tracks, backchannel reference checks, market maps, portfolio check-ins, and Affinity CRM sign-in. Not for Affinity Photo, Designer or Publisher (Canva's design apps) or design files, the user's own calendar or personal reminders, Granola or Wispr Flow notes the user names, or the firm's own hiring interviews (Metaview).
+description: The firm's Affinity CRM: companies, founders, LPs, deals, pipeline stages, warm intros, notes, reminders, meetings and transcripts held in Affinity, and meeting prep for tracked companies. Not for the user's calendar, Granola or Wispr Flow notes, or hiring interviews (metaview).
 ---
 
-If Affinity's tools are absent, run `/connect` and choose Affinity, or on Jelly call jelly_connection_request. An Affinity admin must first add OpenCode's client URL in Manage Apps.
+If Affinity's tools are absent, run `/connect` and choose Affinity. An Affinity admin must first add OpenCode's client URL in Manage Apps.
 
 # Affinity CRM
 
@@ -81,7 +81,9 @@ expires after a day. The user's own calendar, mail and reminders belong to their
 only when the user names them, also for a prep or recap that names no app about a company the CRM tracks. Hiring
 interviews are Metaview's. Load `affinity-write` before any change, or a request to delete, merge or report a problem.
 
+`events_list` is also the tool `affinity_events_list` (`tools.affinity.events_list`), for a listing in chat or Code Mode.
+
 Scripts run the reads through the tools RPC `affinity.crm.tools`, as a session made for them (`opencode api post
 /api/session -d '{"title":"…","agent":"build","location":{"directory":"/path/to/project"}}'`, keep `data.id`; never borrow one found through history or a list),
 and each call counts against the quota. Details:
-https://raw.githubusercontent.com/joe-broadhead/opencode-affinity/HEAD/docs/scripting.md
+https://github.com/we-the-rebel-alliance/affinity-plugin/blob/master/docs/scripting.md
