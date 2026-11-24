@@ -315,6 +315,7 @@ describe("events_list", () => {
     const mine = (await list({ account: ACCOUNT, since: SINCE, limit: 1 })).cursor
     expect(await code(list({ account: "4821/someone@example.com", cursor: mine }, options))).toBe("ACCOUNT_MISMATCH")
     expect(await code(list({ account: ACCOUNT, cursor: "not-a-cursor" }, options))).toBe("CURSOR_INVALID")
+    // A contract-1 cursor (the old format) is refused: the plugin accepts no legacy cursor.
     expect(await code(list({ account: ACCOUNT, cursor: encodeCursor("affinity", { a: ACCOUNT, t: 0, i: 0, w: 0, k: 0 }) }, options))).toBe("CURSOR_INVALID")
     expect(await code(list({ account: ACCOUNT, cursor: encodeBoundCursor({ plugin: "affinity", source: "affinity", account: ACCOUNT }, { a: ACCOUNT, t: NOW, i: 0 }) }, options))).toBe("CURSOR_INVALID")
     const other = encodeBoundCursor({ plugin: "granola", source: "affinity", account: ACCOUNT }, { a: ACCOUNT, t: 0, i: 0, w: 0, k: 0 })

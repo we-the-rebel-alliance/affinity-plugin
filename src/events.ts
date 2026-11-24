@@ -1,5 +1,5 @@
 import type { Plugin } from "@opencode/plugin"
-import { Error as ToolError, type ToolContext } from "@opencode/plugin/promise/tool"
+import { Error as ToolError, type Info as ToolInfo, type ToolContext } from "@opencode/plugin/promise/tool"
 import { decodeBoundCursor, encodeBoundCursor, type CursorBinding } from "@we-the-rebel-alliance/source-contract/cursor"
 import {
   EVENT_LIMITS,
@@ -70,7 +70,7 @@ import { shortReason } from "./redact.js"
  */
 
 /** The plugin's package name, which every page names. */
-export const PACKAGE = "@joe-broadhead/opencode-affinity"
+export const PACKAGE = "@we-the-rebel-alliance/affinity-plugin"
 /** The source every event names, and the `source` input the descriptor gives. */
 export const SOURCE = "affinity"
 /** The descriptor's id for it. */
@@ -460,6 +460,7 @@ function stateOf(cursor: string, account: string): State {
     throw fail("ACCOUNT_MISMATCH", `The cursor is for another Affinity account than ${account}.`, "Pass the cursor with the account it was issued for, or start again for this account with since.")
   }
   const decoded = decodeBoundCursor(bindingOf(account), cursor)
+  // No acceptV1: a contract-1 cursor is refused like any other cursor this source did not issue.
   if (!decoded.ok) throw cursorInvalid()
   const { state } = decoded
   const pos = pair([state["t"], state["i"]])
@@ -818,6 +819,24 @@ export function eventsMethod(deps: EventsDeps): OwnedMethod {
     input: EVENTS_INPUT,
     output: { anyOf: [EVENTS_OUTPUT, COMPANIES_OUTPUT] },
     run: (input: unknown, call: ToolCall) => runEvents(deps, input, call as unknown as ToolContext),
+  }
+}
+
+/**
+ * `events_list` as a tool the model sees, in the `affinity` namespace: the host's effective tool id is
+ * `affinity_events_list`, its Code Mode path `affinity.events_list`, and its permission action `affinity_events_list`
+ * (already allowed by `SOURCE_METHODS` at every `access` level). The definition is the tools RPC method's: the same
+ * input, description and output. The handler runs the method's one run with the host tool context, so the host's
+ * session, agent, call id and cancellation apply exactly as they do to an Affinity MCP tool.
+ */
+export function eventsTool(deps: EventsDeps): ToolInfo {
+  return {
+    name: EVENTS_LIST,
+    description: EVENTS_DESCRIPTION,
+    input: EVENTS_INPUT,
+    output: { anyOf: [EVENTS_OUTPUT, COMPANIES_OUTPUT] },
+    options: { namespace: SERVER_NAME, permission: EVENTS_ACTION, codemode: true },
+    execute: async (input, context) => ({ output: await runEvents(deps, input, context) }),
   }
 }
 
