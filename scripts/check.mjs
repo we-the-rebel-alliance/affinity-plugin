@@ -29,7 +29,11 @@ const stages = {
   unit: () => run("bun", ["test", "./test/unit"]),
   // The source contract's kit over package.json's sources, writing reports/conformance-report.json for a release.
   conformance: () => run("bun", ["scripts/conformance.ts"]),
-  kit: () => run("node", ["--test", "--test-name-pattern", kitPattern(), "scripts/release-kit.test.mjs"], { env: { KIT_TESTS_NESTED: "1" } }),
+  // The pinned release kit's "CI: macOS on pushes ..." suite still asserts the retired macOS matrix, and its
+  // "the kit tests, whatever ..." suite re-runs this file in children that would hit it again. The standard's ci job
+  // is one runner and 4b replaces the kit. Skip exactly those two suites; every other suite, including drift-kit's,
+  // runs, and the pinned file is not edited.
+  kit: () => run("node", ["--test", "--test-skip-pattern", "^CI: macOS on pushes|^the kit tests, whatever", "scripts/release-kit.test.mjs"], { env: { KIT_TESTS_NESTED: "1" } }),
   build: () => run("node", ["scripts/build.mjs"]),
   icons: () => run("node", ["scripts/check-icons.mjs"]),
   host: host,
@@ -56,20 +60,6 @@ for (const name of order) {
   }
 }
 console.log(`\n[check] passed: ${order.join(", ")}`)
-
-/**
- * The release-kit suites to run. The copied kit still self-checks that ci.yml carries the retired macOS matrix; the
- * standard's ci job is one runner, and 4b replaces the kit. Only that obsolete suite is left out, together with the
- * nested re-run that would run it again; every other kit suite runs. The pinned file is not edited.
- */
-function kitPattern() {
-  const source = readFileSync(join(root, "scripts", "release-kit.test.mjs"), "utf8")
-  const names = [...source.matchAll(/^describe\("([^"]+)"/gm)]
-    .map((match) => match[1])
-    .filter((name) => !name.startsWith("CI: macOS on pushes") && !name.startsWith("the kit tests, whatever"))
-    .map((name) => name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
-  return `^(${names.join("|")})$`
-}
 
 function run(command, args, options = {}) {
   const result = spawnSync(command, args, { cwd: options.cwd ?? root, env: { ...env, ...options.env }, stdio: "inherit" })
