@@ -29,7 +29,7 @@ Affinity MCP server and OAuth.
 | --------------------------------------------------- | ------------------------------------------------------------------------------------------ |
 | `npm ci --ignore-scripts`                           | installs dev tooling only; there are no runtime dependencies                               |
 | `npm run check`                                     | the whole gate: lint, typecheck, bundle, dist freshness, tests, conformance, pack          |
-| `npx plugin-kit check`                              | the contract's gate: T0/T1, recorded sources, accounts, bus, status, docs drift, forbidden |
+| `npx plugin-kit check`                              | the contract's gate: T0/T1, recorded sources, accounts, status, docs drift, forbidden |
 | `npx plugin-kit docs`                               | regenerates the generated doc sections from the manifest                                   |
 | `UPDATE_FIXTURES=1 npx vitest run test/conformance` | rewrites `fixtures/conformance.json` from the real handlers                                |
 | `npx plugin-kit release 0.0.0 --dry-run`            | checks a release; the owner pushes the tag and CI publishes it                             |

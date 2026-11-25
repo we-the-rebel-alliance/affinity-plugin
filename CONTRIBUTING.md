@@ -23,8 +23,8 @@ npm run check
 | `npm run lint` | `@biomejs/biome` finds no lint error |
 | `npm run typecheck` | the sources and tests typecheck under strict settings |
 | `npm run bundle` | `dist/index.js` is bundled from `src/index.ts` with esbuild, and the committed file must match (`git diff --exit-code dist/`) |
-| `npm test` | the unit tests: manifest, provider, events, probe, status, accounts, bus and refusals |
-| `npm run conformance` | `plugin-kit check`: conformance T0 and T1 on the real 2.4.1 host, the recorded fixture, accounts, bus, status, docs drift, the forbidden scan and no bundled kit |
+| `npm test` | the unit tests: manifest, provider, events, probe, status, accounts, skills and refusals |
+| `npm run conformance` | `plugin-kit check`: conformance T0 and T1 on the real 2.4.1 host, the recorded fixture, accounts, status, docs drift, the forbidden scan and no bundled kit |
 | `npm run test:pack` | the tarball holds `package.json`, `dist/index.js`, both skills, the assets, `README.md` and `LICENSE`, and its entry loads |
 
 CI runs the same gate in one job named `ci`. `dist/index.js` is committed, because OpenCode installs the package as it
