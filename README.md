@@ -48,6 +48,13 @@ profile's `clientId`, OpenCode signs in with its own client metadata document; a
 OpenCode's client URL under Settings, Manage Apps. A profile's `clientId` (a UUID) signs in as your organisation's own
 Public OAuth app instead.
 
+## Skills
+
+The plugin ships two skills, and OpenCode loads both when the plugin starts: `affinity` for reads and
+`affinity-write` for changes. `affinity` says when to use the plugin, how to find a company, a person or a deal, how to
+pick an account and what the quota allows. `affinity-write` says what a change reaches — the firm's shared CRM, the
+organisation, a colleague or Affinity itself — and when to ask before a delete or a merge.
+
 ## Options
 
 | Option | Default | What it does |

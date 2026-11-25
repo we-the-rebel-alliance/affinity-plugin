@@ -39,16 +39,17 @@ Affinity MCP server and OAuth.
 
 ```
 dist/index.js            the committed bundle; run npm run bundle and commit what it writes
-src/index.ts             Plugin.define → assertHost, registerAccounts, register, one tool hook
+src/index.ts             Plugin.define → assertHost, loadSkills, registerAccounts, register, one tool hook
 src/manifest.ts          reads ../package.json: the manifest and the installed version
 src/accounts.ts          the profile, one server name per alias, the MCP server config
+src/skills.ts            reads skills/<id>/SKILL.md and registers them through ctx.skill.transform
 src/provider/index.ts    the only place the endpoint is named; tool calls, states and error codes
 src/provider/answers.ts  Affinity's field names; the meetings, whoami and companies readers
 src/handlers/            status, events_list, probe, and the one handler table
 src/bus.ts               the execute.after hook that emits changed
 test/unit                the manifest, provider, events, probe, status, accounts, bus and refusals
 test/conformance         the real handlers over a fake Affinity transport, recorded into fixtures/conformance.json
-test/host                the built bundle in the real OpenCode 2.4.1 host
+test/host                the built bundle in the real OpenCode 2.4.1 host, including its skills list in an empty project
 test/pack                the tarball npm pack builds
 skills/                  affinity (reads) and affinity-write (changes)
 docs/                    capabilities, accounts, configuration, architecture, automations, security

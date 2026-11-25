@@ -14,12 +14,14 @@ import { registerChangedHook } from "./bus.ts"
 import { createHandlers } from "./handlers/index.ts"
 import { manifest } from "./manifest.ts"
 import { createProvider } from "./provider/index.ts"
+import { loadSkills, registerSkills } from "./skills.ts"
 
 export default Plugin.define({
   id: manifest.plugin.name,
   async setup(ctx) {
     assertHost(ctx, manifest)
     const options = (ctx.options ?? {}) as Record<string, unknown>
+    const { skills, problems: skillProblems } = await loadSkills()
     const accounts = await registerAccounts(ctx, {
       manifest,
       options,
@@ -33,6 +35,7 @@ export default Plugin.define({
         provider: createProvider(ctx),
         hostVersion: ctx.app.version,
         accountProblems: [...accounts.problems, ...(plan.ok ? [] : plan.problems)],
+        skillProblems,
         profiles: plan.ok ? plan.value.accounts : []
       })
     )
@@ -41,7 +44,9 @@ export default Plugin.define({
       registration.bus,
       accounts.accounts.map((account) => account.alias)
     )
+    const skillRegistration = await registerSkills(ctx.skill, skills)
     return async () => {
+      await skillRegistration.dispose()
       await hook.dispose()
       await registration.dispose()
     }
