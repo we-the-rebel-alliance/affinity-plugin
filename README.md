@@ -13,8 +13,10 @@ accounts can be signed in at once, one per Affinity organisation or person.
 opencode plugin add github:we-the-rebel-alliance/affinity-plugin#v0.0.8
 ```
 
-`v0.0.8` is this repository's first release on plugin-contract, cut from the release pull request. Nothing else is
-needed: there are no runtime dependencies, and the built entry is committed, so the install needs no build step.
+`v0.0.8` is this repository's release on plugin-contract, cut from the release pull request. `v0.0.0` is the
+earlier new-package release, before the skills were registered; `v0.0.1`–`v0.0.7` are pre-transfer tags. The published
+`v0.0.0` stays as it is; install `v0.0.8` for the skill registration. Nothing else is needed: there are no runtime
+dependencies, and the built entry is committed, so the install needs no build step.
 
 ## Sign in
 
@@ -240,9 +242,9 @@ Every failure reads `CODE: What happened. Next step: What to do.`
 | `UNAVAILABLE` | the provider could not be reached |
 <!-- /generated:errors -->
 
-The plugin's own code is `SKILLS_INVALID`: a bundled skill file is missing or broken, and `status` reports it without
-stopping the plugin. The contract's table above is generated; this one code is the plugin's until the manifest can
-declare it.
+The skill loader uses the contract's `SCHEMA_VIOLATION` code: a bundled `skills/<id>/SKILL.md` whose frontmatter is
+not valid YAML, or has no name or description or an empty body, fails setup with the file's path and a next step. The
+frontmatter is parsed as YAML, so `>` and `|` block-scalar descriptions register their text, not the marker.
 
 ## Troubleshooting
 
@@ -257,8 +259,8 @@ declare it.
 - **`CURSOR_INVALID`**: a cursor belongs to the account and source that issued it. Pass it with the same `account`, or
   start again with `since`.
 - **`HOST_UNTESTED`**: OpenCode is outside the plugin's tested range (`>=2.4.1 <2.5.0`). Pin a supported release.
-- **`SKILLS_INVALID`**: a bundled `skills/<id>/SKILL.md` is missing or broken. Reinstall the plugin; `status` names the
-  file and the next step. The plugin still starts and its tools still work.
+- **`SCHEMA_VIOLATION` from setup**: a bundled `skills/<id>/SKILL.md` has invalid YAML, a missing name or description,
+  or an empty body. The error names the file and the next step; fix the skill file, then reload the plugin.
 - **An alias that stays in error**: its MCP server is missing, disabled or failed. Check `options.accounts`, then reload
   the plugin; `status` (`tools.affinity.status` in Code Mode) names the state and the next step.
 

@@ -27,13 +27,14 @@
     "skills",
     "assets",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "NOTICE"
   ],
   "scripts": {
     "check": "npm run lint && npm run typecheck && npm run bundle && git diff --exit-code dist/ && npm run test && npm run conformance && npx plugin-kit docs --check && npm run test:pack",
     "lint": "biome check .",
     "typecheck": "tsc --noEmit",
-    "bundle": "esbuild src/index.ts --bundle --platform=node --format=esm --target=node22 --outfile=dist/index.js --external:'@opencode/*'",
+    "bundle": "node scripts/build.mjs",
     "test": "vitest run",
     "conformance": "plugin-kit check",
     "test:pack": "node test/pack/pack.mjs"
@@ -47,7 +48,8 @@
     "@we-the-rebel-alliance/plugin-contract": "github:we-the-rebel-alliance/plugin-contract#v0.0.0",
     "esbuild": "0.28.2",
     "typescript": "5.9.3",
-    "vitest": "5.1.1"
+    "vitest": "5.1.1",
+    "yaml": "2.9.1"
   },
   "capabilities": {
     "version": 1,

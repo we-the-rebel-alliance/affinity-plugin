@@ -3,7 +3,7 @@
   "plugin": "@we-the-rebel-alliance/affinity-plugin",
   "namespace": "Affinity CRM: the firm's companies, people, deals, lists, notes and meetings, read through Affinity's MCP server and its own tools. Pass account for each alias. send_feedback is offered only when the user asks. Writes reach the firm's shared CRM and share its monthly API quota.",
   "accounts": {
-    "real": true,
+    "real": false,
     "aliases": [
       "work",
       "personal"

@@ -38,10 +38,10 @@ Affinity MCP server and OAuth.
 
 ```
 dist/index.js            the committed bundle; run npm run bundle and commit what it writes
-src/index.ts             Plugin.define → assertHost, loadSkills, registerAccounts, register
+src/index.ts             Plugin.define → assertHost, readSkills, registerSkills, registerAccounts, register
 src/manifest.ts          reads ../package.json: the manifest and the installed version
 src/accounts.ts          the profile, one server name per alias, the MCP server config
-src/skills.ts            reads skills/<id>/SKILL.md and registers them through ctx.skill.transform
+src/skills.ts            reads skills/<id>/SKILL.md, parses its YAML frontmatter and registers them through ctx.skill.transform
 src/provider/index.ts    the only place the endpoint is named; tool calls, states and error codes
 src/provider/answers.ts  Affinity's field names; the meetings, whoami and companies readers
 src/handlers/            status, events_list, probe, and the one handler table
@@ -76,9 +76,9 @@ docs/                    capabilities, accounts, configuration, architecture, au
 - **No bus event and no per-request hook.** The plugin makes no write of its own and receives no webhook, so contract §10
   has nothing to nudge. It installs no `execute.after` hook and declares no event; `register` still owns the one RPC
   registration.
-- **Register the skills once.** `loadSkills` reads every `skills/<id>/SKILL.md` and validates its frontmatter;
-  `registerSkills` adds them through `ctx.skill.transform`. A missing or broken file is a `status` problem, never a
-  setup failure.
+- **Register the skills once.** `readSkills` reads every `skills/<id>/SKILL.md`, parses its frontmatter as YAML
+  (block scalars `>` and `|` register their folded or literal text) and validates it; `registerSkills` adds them through
+  `ctx.skill.transform`. A malformed file throws `SCHEMA_VIOLATION` at setup, with one clear error and a next step.
 - **Answer status with `statusAnswer`.** It builds the `STATUS_SCHEMA` answer from the manifest, the versions, the
   account states, the problems setup recorded and `await call.unguardedAgents()`, passed straight through: the result
   is `{ ok, agents | error }`, and `statusAnswer` records a failed list as a problem itself. Keep no state between

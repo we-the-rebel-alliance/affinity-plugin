@@ -1,7 +1,7 @@
 ---
 
 name: affinity-write
-description: Before any change in the firm's Affinity CRM: create or update companies, people, deals, notes, interactions or reminders, add list entries, change fields, share a list, delete, merge, or send feedback to Affinity.
+description: "Before any change in the firm's Affinity CRM: create or update companies, people, deals, notes, interactions or reminders, add list entries, change fields, share a list, delete, merge, or send feedback to Affinity."
 ---
 
 # Changing Affinity

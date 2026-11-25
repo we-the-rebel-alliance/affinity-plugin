@@ -14,14 +14,15 @@ import { profileOf, serverConfig } from "./accounts.ts"
 import { createHandlers } from "./handlers/index.ts"
 import { manifest } from "./manifest.ts"
 import { createProvider } from "./provider/index.ts"
-import { loadSkills } from "./skills.ts"
+import { readSkills, registerSkills } from "./skills.ts"
 
 export default Plugin.define({
   id: manifest.plugin.name,
   async setup(ctx) {
     assertHost(ctx, manifest)
+    // Check every skill before anything registers, so a malformed file fails setup with one clear error.
+    const skills = readSkills()
     const options = (ctx.options ?? {}) as Record<string, unknown>
-    const { skills, problems: skillProblems } = await loadSkills()
     const accounts = await registerAccounts(ctx, {
       manifest,
       options,
@@ -35,13 +36,10 @@ export default Plugin.define({
         provider: createProvider(ctx),
         hostVersion: ctx.app.version,
         accountProblems: [...accounts.problems, ...(plan.ok ? [] : plan.problems)],
-        skillProblems,
         profiles: plan.ok ? plan.value.accounts : []
       })
     )
-    const skillRegistration = await ctx.skill.transform((editor) => {
-      for (const skill of skills) editor.add(skill)
-    })
+    const skillRegistration = await registerSkills(ctx, skills)
     return async () => {
       await skillRegistration.dispose()
       await registration.dispose()

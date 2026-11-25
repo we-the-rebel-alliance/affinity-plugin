@@ -40,6 +40,7 @@ try {
     "assets/icon-256.png",
     "README.md",
     "LICENSE",
+    "NOTICE",
     "package.json"
   ]
   for (const file of required) check(existsSync(join(pkgDir, file)), `${file} is not in the tarball`)
@@ -57,7 +58,9 @@ try {
   const module = await import(pathToFileURL(join(pkgDir, "dist/index.js")).href)
   check(module.default?.id === "affinity", `the extracted entry exports ${String(module.default?.id ?? module.default)}`)
 
-  console.log(`pack: ${info.filename} carries the entry, both skills, the icons, README and LICENSE, and its ${String(module.default?.id ?? "?")} plugin loads`)
+  const notice = readFileSync(join(pkgDir, "NOTICE"), "utf8")
+  check(notice.includes("yaml 2.9.1 (ISC)") && notice.includes("Copyright Eemeli Aro <eemeli@gmail.com>"), "the tarball's NOTICE does not name the bundled yaml")
+  console.log(`pack: ${info.filename} carries the entry, both skills, the icons, README, LICENSE and NOTICE, and its ${String(module.default?.id ?? "?")} plugin loads`)
 } finally {
   rmSync(work, { recursive: true, force: true })
 }

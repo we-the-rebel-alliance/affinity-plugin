@@ -170,7 +170,7 @@ async function record() {
     plugin: PACKAGE,
     namespace: manifest.plugin.summary,
     accounts: {
-      real: true,
+      real: false,
       aliases: PROFILES.map((profile) => profile.alias),
       required: { method: "events_list", code: required.code },
       unknown: { method: "events_list", account: "nobodyhere", code: unknown.code },
