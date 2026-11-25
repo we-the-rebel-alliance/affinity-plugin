@@ -13,7 +13,7 @@ import { checkManifest, type Manifest, manifestHash } from "@we-the-rebel-allian
 import { describe, expect, test } from "vitest"
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
-const pkg = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8")) as { name: string; version: string; capabilities: Manifest }
+const pkg = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8")) as { name: string; version: string; capabilities: Manifest; scripts: Record<string, string> }
 const manifest = pkg.capabilities
 /** The options schema's properties, as the tests read them. */
 const OPTIONS = ((manifest.options as { properties?: Record<string, Record<string, unknown>> }).properties ?? {}) as Record<string, Record<string, unknown>>
@@ -74,6 +74,15 @@ describe("the manifest", () => {
     if (!checked.ok) throw new Error(checked.problems.join("\n"))
     expect(checked.ok).toBe(true)
     expect(manifestHash(manifest)).toMatch(/^sha256:[0-9a-f]{64}$/)
+  })
+
+  test("has no script npm runs while preparing a git dependency, and a bundle script", () => {
+    // npm prepares a git dependency that has any of these by running `npm install` inside it, which fails in OpenCode
+    // 2.4.1 ("git dep preparation failed"). The built entry is committed instead, and `bundle` is a plain script.
+    for (const name of ["build", "prepack", "prepare", "preinstall", "install", "postinstall"]) expect(pkg.scripts).not.toHaveProperty(name)
+    expect(typeof pkg.scripts["bundle"]).toBe("string")
+    expect(pkg.scripts["check"]).toContain("npm run bundle")
+    expect(pkg.scripts["check"]).toContain("git diff --exit-code dist/")
   })
 
   test("declares exactly the manifest's own keys", () => {

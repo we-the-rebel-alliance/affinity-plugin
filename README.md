@@ -14,7 +14,7 @@ opencode plugin add github:we-the-rebel-alliance/affinity-plugin#v0.0.0
 ```
 
 `v0.0.0` is this repository's first release, cut from the release pull request. Nothing else is needed: there are no
-runtime dependencies, and the package carries its own build.
+runtime dependencies, and the built entry is committed, so the install needs no build step.
 
 ## Sign in
 
@@ -28,7 +28,7 @@ Several accounts, each signed in on its own:
 {
   "plugins": [
     {
-      "package": "@we-the-rebel-alliance/affinity-plugin",
+      "package": "github:we-the-rebel-alliance/affinity-plugin#v0.0.0",
       "options": {
         "accounts": {
           "work": {},
