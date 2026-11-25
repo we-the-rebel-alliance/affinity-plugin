@@ -110,7 +110,7 @@
                 "hash": "sha256:4a7fb52cd308d2a5c2673587378153835d0f2d72294f22a4559737945e4462e2"
               }
             ],
-            "cursor": "eyJ2IjoyLCJzIjoiYWZmaW5pdHkiLCJiIjoiY2VhOTJmYzYxNDg2YjBjMiIsImwiOiJtZWV0aW5ncyIsInQiOjE3OTQ1Njc2MDAwMDAsImkiOjkwMDcxOTkyNTQ3NDA5OTEsImciOjE3OTQ1NzEyMDAwMDAsInciOjE3OTQ1NzEyMDAwMDAsImUiOlsxNzkzNDkxMjAwMDAwLDBdLCJwIjpbMTc5MzQ5MTIwMDAwMCwwXSwieCI6MTEwNTkyMDAwMDAsInkiOjI0MTkyMDAwMDB9",
+            "cursor": "eyJ2IjoyLCJzIjoiYWZmaW5pdHkiLCJiIjoiY2VhOTJmYzYxNDg2YjBjMiIsImwiOiJtZWV0aW5ncyIsInQiOjE3OTQ1Njc2MDAwMDAsImkiOiJ-IiwiZyI6MTc5NDU3MTIwMDAwMCwidyI6MTc5NDU3MTIwMDAwMCwiZSI6WzE3OTM0OTEyMDAwMDAsIiJdLCJwIjpbMTc5MzQ5MTIwMDAwMCwiIl0sIngiOjExMDU5MjAwMDAwLCJ5IjoyNDE5MjAwMDAwfQ",
             "more": false,
             "trust": "untrusted",
             "refused": [
@@ -195,7 +195,7 @@
                 "hash": "sha256:d59d15c7b0c082861d0030b9f92a653e212bfdcc1311fc46aab94bb39de940c0"
               }
             ],
-            "cursor": "eyJ2IjoyLCJzIjoiYWZmaW5pdHkiLCJiIjoiY2VhOTJmYzYxNDg2YjBjMiIsImwiOiJtZWV0aW5ncyIsInQiOjE3OTQ0NzQwMDAwMDAsImkiOjEwMDEsImciOjE3OTQ1NzEyMDAwMDAsInciOjE3OTQ1NzEyMDAwMDAsImUiOlsxNzkzNDkxMjAwMDAwLDBdLCJwIjpbMTc5MzQ5MTIwMDAwMCwwXSwieCI6MTEwNTkyMDAwMDAsInkiOjI0MTkyMDAwMDB9",
+            "cursor": "eyJ2IjoyLCJzIjoiYWZmaW5pdHkiLCJiIjoiY2VhOTJmYzYxNDg2YjBjMiIsImwiOiJtZWV0aW5ncyIsInQiOjE3OTQ0NzQwMDAwMDAsImkiOiIxMDAxIiwiZyI6MTc5NDU3MTIwMDAwMCwidyI6MTc5NDU3MTIwMDAwMCwiZSI6WzE3OTM0OTEyMDAwMDAsIiJdLCJwIjpbMTc5MzQ5MTIwMDAwMCwiIl0sIngiOjExMDU5MjAwMDAwLCJ5IjoyNDE5MjAwMDAwfQ",
             "more": true,
             "trust": "untrusted",
             "refused": [
@@ -222,7 +222,7 @@
           "input": {
             "source": "affinity",
             "account": "work",
-            "cursor": "eyJ2IjoyLCJzIjoiYWZmaW5pdHkiLCJiIjoiY2VhOTJmYzYxNDg2YjBjMiIsImwiOiJtZWV0aW5ncyIsInQiOjE3OTQ0NzQwMDAwMDAsImkiOjEwMDEsImciOjE3OTQ1NzEyMDAwMDAsInciOjE3OTQ1NzEyMDAwMDAsImUiOlsxNzkzNDkxMjAwMDAwLDBdLCJwIjpbMTc5MzQ5MTIwMDAwMCwwXSwieCI6MTEwNTkyMDAwMDAsInkiOjI0MTkyMDAwMDB9"
+            "cursor": "eyJ2IjoyLCJzIjoiYWZmaW5pdHkiLCJiIjoiY2VhOTJmYzYxNDg2YjBjMiIsImwiOiJtZWV0aW5ncyIsInQiOjE3OTQ0NzQwMDAwMDAsImkiOiIxMDAxIiwiZyI6MTc5NDU3MTIwMDAwMCwidyI6MTc5NDU3MTIwMDAwMCwiZSI6WzE3OTM0OTEyMDAwMDAsIiJdLCJwIjpbMTc5MzQ5MTIwMDAwMCwiIl0sIngiOjExMDU5MjAwMDAwLCJ5IjoyNDE5MjAwMDAwfQ"
           },
           "answer": {
             "source": "affinity",
@@ -252,7 +252,7 @@
                 "hash": "sha256:4a7fb52cd308d2a5c2673587378153835d0f2d72294f22a4559737945e4462e2"
               }
             ],
-            "cursor": "eyJ2IjoyLCJzIjoiYWZmaW5pdHkiLCJiIjoiY2VhOTJmYzYxNDg2YjBjMiIsImwiOiJtZWV0aW5ncyIsInQiOjE3OTQ1Njc2MDAwMDAsImkiOjkwMDcxOTkyNTQ3NDA5OTEsImciOjE3OTQ1NzEyMDAwMDAsInciOjE3OTQ1NzEyMDAwMDAsImUiOlsxNzk0NDc0MDAwMDAwLDEwMDFdLCJwIjpbMTc5NDQ3NDAwMDAwMCwxMDAxXSwieCI6MTEwNTkyMDAwMDAsInkiOjQ4Mzg0MDAwMDB9",
+            "cursor": "eyJ2IjoyLCJzIjoiYWZmaW5pdHkiLCJiIjoiY2VhOTJmYzYxNDg2YjBjMiIsImwiOiJtZWV0aW5ncyIsInQiOjE3OTQ1Njc2MDAwMDAsImkiOiJ-IiwiZyI6MTc5NDU3MTIwMDAwMCwidyI6MTc5NDU3MTIwMDAwMCwiZSI6WzE3OTQ0NzQwMDAwMDAsIjEwMDEiXSwicCI6WzE3OTQ0NzQwMDAwMDAsIjEwMDEiXSwieCI6MTEwNTkyMDAwMDAsInkiOjQ4Mzg0MDAwMDB9",
             "more": false,
             "trust": "untrusted",
             "cost": {
@@ -306,7 +306,7 @@
                 "hash": "sha256:cc7f292de9d918c592054d05eea5d0bfee2f9fad57f19a20ebd7c87b97db5261"
               }
             ],
-            "cursor": "eyJ2IjoyLCJzIjoiYWZmaW5pdHkiLCJiIjoiYTZlNzI2NWFmM2ExNzBkOSIsImwiOiJtZWV0aW5ncyIsInQiOjE3OTQ1Njc2MDAwMDAsImkiOjkwMDcxOTkyNTQ3NDA5OTEsImciOjE3OTQ1NzEyMDAwMDAsInciOjE3OTQ1NzEyMDAwMDAsImUiOlsxNzkzNDkxMjAwMDAwLDBdLCJwIjpbMTc5MzQ5MTIwMDAwMCwwXSwieCI6MTEwNTkyMDAwMDAsInkiOjI0MTkyMDAwMDB9",
+            "cursor": "eyJ2IjoyLCJzIjoiYWZmaW5pdHkiLCJiIjoiYTZlNzI2NWFmM2ExNzBkOSIsImwiOiJtZWV0aW5ncyIsInQiOjE3OTQ1Njc2MDAwMDAsImkiOiJ-IiwiZyI6MTc5NDU3MTIwMDAwMCwidyI6MTc5NDU3MTIwMDAwMCwiZSI6WzE3OTM0OTEyMDAwMDAsIiJdLCJwIjpbMTc5MzQ5MTIwMDAwMCwiIl0sIngiOjExMDU5MjAwMDAwLCJ5IjoyNDE5MjAwMDAwfQ",
             "more": false,
             "trust": "untrusted",
             "cost": {
@@ -337,7 +337,7 @@
               "label": "Pilot Owner (Example Ventures)"
             },
             "events": [],
-            "cursor": "eyJ2IjoyLCJzIjoiYWZmaW5pdHkiLCJiIjoiY2VhOTJmYzYxNDg2YjBjMiIsImwiOiJtZWV0aW5ncyIsInQiOjE3OTQ1Njc2MDAwMDAsImkiOjkwMDcxOTkyNTQ3NDA5OTEsImciOjE3OTQ1NzEyMDAwMDAsInciOjE3OTQ1NzEyMDAwMDAsImUiOlsxNzk0NTI4MDAwMDAwLDBdLCJwIjpbMTc5NDUyODAwMDAwMCwwXSwieCI6MTEwNTkyMDAwMDAsInkiOjEyMDk2MDAwMDB9",
+            "cursor": "eyJ2IjoyLCJzIjoiYWZmaW5pdHkiLCJiIjoiY2VhOTJmYzYxNDg2YjBjMiIsImwiOiJtZWV0aW5ncyIsInQiOjE3OTQ1Njc2MDAwMDAsImkiOiJ-IiwiZyI6MTc5NDU3MTIwMDAwMCwidyI6MTc5NDU3MTIwMDAwMCwiZSI6WzE3OTQ1MjgwMDAwMDAsIiJdLCJwIjpbMTc5NDUyODAwMDAwMCwiIl0sIngiOjExMDU5MjAwMDAwLCJ5IjoxMjA5NjAwMDAwfQ",
             "more": false,
             "trust": "untrusted",
             "cost": {
@@ -433,7 +433,7 @@
                 "hash": "sha256:4a7fb52cd308d2a5c2673587378153835d0f2d72294f22a4559737945e4462e2"
               }
             ],
-            "cursor": "eyJ2IjoyLCJzIjoiYWZmaW5pdHkiLCJiIjoiY2VhOTJmYzYxNDg2YjBjMiIsImwiOiJtZWV0aW5ncyIsInQiOjE3OTQ1Njc2MDAwMDAsImkiOjkwMDcxOTkyNTQ3NDA5OTEsImciOjE3OTQ1NzEyMDAwMDAsInciOjE3OTQ1NzEyMDAwMDAsImUiOlsxNzg2Nzk1MjAwMDAwLDBdLCJwIjpbMTc4Njc5NTIwMDAwMCwwXSwieCI6MTEwNTkyMDAwMDAsInkiOjk2NzY4MDAwMDB9",
+            "cursor": "eyJ2IjoyLCJzIjoiYWZmaW5pdHkiLCJiIjoiY2VhOTJmYzYxNDg2YjBjMiIsImwiOiJtZWV0aW5ncyIsInQiOjE3OTQ1Njc2MDAwMDAsImkiOiJ-IiwiZyI6MTc5NDU3MTIwMDAwMCwidyI6MTc5NDU3MTIwMDAwMCwiZSI6WzE3ODY3OTUyMDAwMDAsIiJdLCJwIjpbMTc4Njc5NTIwMDAwMCwiIl0sIngiOjExMDU5MjAwMDAwLCJ5Ijo5Njc2ODAwMDAwfQ",
             "more": false,
             "trust": "untrusted",
             "refused": [
@@ -464,7 +464,7 @@
           "input": {
             "source": "affinity",
             "account": "work",
-            "cursor": "eyJ2IjoyLCJzIjoiYWZmaW5pdHkiLCJiIjoiY2VhOTJmYzYxNDg2YjBjMiIsImwiOiJtZWV0aW5ncyIsInQiOjE3ODQxOTk2MDAwMDAsImkiOjkwMDcxOTkyNTQ3NDA5OTEsImciOjE3ODQyMDMyMDAwMDAsInciOjE3ODQyMDMyMDAwMDAsImUiOlsxNzg0MTE2ODAwMDAwLDBdLCJwIjpbMTc4NDExNjgwMDAwMCwwXSwieCI6MTEwNTkyMDAwMDAsInkiOjEyMDk2MDAwMDB9"
+            "cursor": "eyJ2IjoyLCJzIjoiYWZmaW5pdHkiLCJiIjoiY2VhOTJmYzYxNDg2YjBjMiIsImwiOiJtZWV0aW5ncyIsInQiOjE3ODQxOTk2MDAwMDAsImkiOiJ-IiwiZyI6MTc4NDIwMzIwMDAwMCwidyI6MTc4NDIwMzIwMDAwMCwiZSI6WzE3ODQxMTY4MDAwMDAsIiJdLCJwIjpbMTc4NDExNjgwMDAwMCwiIl0sIngiOjExMDU5MjAwMDAwLCJ5IjoxMjA5NjAwMDAwfQ"
           },
           "expect": "expired",
           "answer": {
@@ -541,7 +541,7 @@
                 "hash": "sha256:4a7fb52cd308d2a5c2673587378153835d0f2d72294f22a4559737945e4462e2"
               }
             ],
-            "cursor": "eyJ2IjoyLCJzIjoiYWZmaW5pdHkiLCJiIjoiY2VhOTJmYzYxNDg2YjBjMiIsImwiOiJtZWV0aW5ncyIsInQiOjE3OTQ1Njc2MDAwMDAsImkiOjkwMDcxOTkyNTQ3NDA5OTEsImciOjE3OTQ1NzEyMDAwMDAsInciOjE3OTQ1NzEyMDAwMDAsImUiOlsxNzg2Nzk1MjAwMDAwLDBdLCJwIjpbMTc4Njc5NTIwMDAwMCwwXSwieCI6MTEwNTkyMDAwMDAsInkiOjk2NzY4MDAwMDB9",
+            "cursor": "eyJ2IjoyLCJzIjoiYWZmaW5pdHkiLCJiIjoiY2VhOTJmYzYxNDg2YjBjMiIsImwiOiJtZWV0aW5ncyIsInQiOjE3OTQ1Njc2MDAwMDAsImkiOiJ-IiwiZyI6MTc5NDU3MTIwMDAwMCwidyI6MTc5NDU3MTIwMDAwMCwiZSI6WzE3ODY3OTUyMDAwMDAsIiJdLCJwIjpbMTc4Njc5NTIwMDAwMCwiIl0sIngiOjExMDU5MjAwMDAwLCJ5Ijo5Njc2ODAwMDAwfQ",
             "more": false,
             "trust": "untrusted",
             "refused": [
@@ -572,7 +572,7 @@
           "input": {
             "source": "affinity",
             "account": "personal",
-            "cursor": "eyJ2IjoyLCJzIjoiYWZmaW5pdHkiLCJiIjoiY2VhOTJmYzYxNDg2YjBjMiIsImwiOiJtZWV0aW5ncyIsInQiOjE3OTQ0NzQwMDAwMDAsImkiOjEwMDEsImciOjE3OTQ1NzEyMDAwMDAsInciOjE3OTQ1NzEyMDAwMDAsImUiOlsxNzkzNDkxMjAwMDAwLDBdLCJwIjpbMTc5MzQ5MTIwMDAwMCwwXSwieCI6MTEwNTkyMDAwMDAsInkiOjI0MTkyMDAwMDB9"
+            "cursor": "eyJ2IjoyLCJzIjoiYWZmaW5pdHkiLCJiIjoiY2VhOTJmYzYxNDg2YjBjMiIsImwiOiJtZWV0aW5ncyIsInQiOjE3OTQ0NzQwMDAwMDAsImkiOiIxMDAxIiwiZyI6MTc5NDU3MTIwMDAwMCwidyI6MTc5NDU3MTIwMDAwMCwiZSI6WzE3OTM0OTEyMDAwMDAsIiJdLCJwIjpbMTc5MzQ5MTIwMDAwMCwiIl0sIngiOjExMDU5MjAwMDAwLCJ5IjoyNDE5MjAwMDAwfQ"
           },
           "expect": {
             "refuses": "CURSOR_INVALID"
