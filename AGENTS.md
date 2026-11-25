@@ -29,7 +29,7 @@ Affinity MCP server and OAuth.
 | Command                                             | Does                                                                                       |
 | --------------------------------------------------- | ------------------------------------------------------------------------------------------ |
 | `npm ci --ignore-scripts`                           | installs dev tooling only; there are no runtime dependencies                               |
-| `npm run check`                                     | the whole gate: lint, typecheck, build, tests, conformance, pack                           |
+| `npm run check`                                     | the whole gate: lint, typecheck, bundle, dist freshness, tests, conformance, pack          |
 | `npx plugin-kit check`                              | the contract's gate: T0/T1, recorded sources, accounts, bus, status, docs drift, forbidden |
 | `npx plugin-kit docs`                               | regenerates the generated doc sections from the manifest                                   |
 | `UPDATE_FIXTURES=1 npx vitest run test/conformance` | rewrites `fixtures/conformance.json` from the real handlers                                |
@@ -38,6 +38,7 @@ Affinity MCP server and OAuth.
 ## Layout
 
 ```
+dist/index.js            the committed bundle; run npm run bundle and commit what it writes
 src/index.ts             Plugin.define → assertHost, registerAccounts, register, one tool hook
 src/manifest.ts          reads ../package.json: the manifest and the installed version
 src/accounts.ts          the profile, one server name per alias, the MCP server config
@@ -100,7 +101,7 @@ section. Hand-written text is plain English: short sentences, one term per conce
 
 ## Forbidden
 
-- Editing `dist/` by hand, or committing it outside a release.
+- Editing `dist/` by hand: run `npm run bundle` and commit what it writes.
 - Adding runtime dependencies, peer dependencies or lifecycle scripts.
 - Naming any app in code, manifest or docs, except in an `x-<app>` key.
 - Copying contract code into this repository.

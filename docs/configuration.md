@@ -20,7 +20,7 @@ is the same schema the plugin validates.
 ```
 
 No options at all: one default account, `affinity`, signed in with `/connect`. The plugin's options live on its entry
-when the entry is an object: `{ "package": "@we-the-rebel-alliance/affinity-plugin", "options": { … } }`.
+when the entry is an object: `{ "package": "github:we-the-rebel-alliance/affinity-plugin#v0.0.0", "options": { … } }`.
 
 ## Two accounts, each with its own profile
 
@@ -28,7 +28,7 @@ when the entry is an object: `{ "package": "@we-the-rebel-alliance/affinity-plug
 {
   "plugins": [
     {
-      "package": "@we-the-rebel-alliance/affinity-plugin",
+      "package": "github:we-the-rebel-alliance/affinity-plugin#v0.0.0",
       "options": {
         "accounts": {
           "work": {},
@@ -48,7 +48,7 @@ when the entry is an object: `{ "package": "@we-the-rebel-alliance/affinity-plug
 {
   "plugins": [
     {
-      "package": "@we-the-rebel-alliance/affinity-plugin",
+      "package": "github:we-the-rebel-alliance/affinity-plugin#v0.0.0",
       "options": { "access": "read-only", "accounts": { "work": {} } }
     }
   ]
@@ -64,7 +64,7 @@ screen narrows, never widens.
 {
   "plugins": [
     {
-      "package": "@we-the-rebel-alliance/affinity-plugin",
+      "package": "github:we-the-rebel-alliance/affinity-plugin#v0.0.0",
       "options": { "access": "ask-changes", "accounts": { "work": {}, "personal": {} } }
     }
   ]

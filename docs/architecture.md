@@ -15,6 +15,9 @@ own tools stay Affinity's: the manifest declares them and the plugin writes no p
 | `src/handlers/`           | `status`, `events_list`, `probe`, and the one handler table                                                      |
 | `src/bus.ts`              | the one `execute.after` tool hook that emits `changed`                                                           |
 
+`dist/index.js` is committed: OpenCode installs the package as it is, so the bundle ships with the source, and
+`npm run check` rebundles it and fails when the committed file is stale.
+
 ## The provider
 
 The endpoint is `https://mcp.affinity.co/mcp`, named once in `src/provider/index.ts`. A call never builds a tool's name

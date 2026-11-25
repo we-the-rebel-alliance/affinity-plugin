@@ -22,13 +22,13 @@ npm run check
 |---|---|
 | `npm run lint` | `@biomejs/biome` finds no lint error |
 | `npm run typecheck` | the sources and tests typecheck under strict settings |
-| `npm run build` | `dist/index.js` is built from `src/index.ts` with esbuild |
+| `npm run bundle` | `dist/index.js` is bundled from `src/index.ts` with esbuild, and the committed file must match (`git diff --exit-code dist/`) |
 | `npm test` | the unit tests: manifest, provider, events, probe, status, accounts, bus and refusals |
 | `npm run conformance` | `plugin-kit check`: conformance T0 and T1 on the real 2.4.1 host, the recorded fixture, accounts, bus, status, docs drift, the forbidden scan and no bundled kit |
 | `npm run test:pack` | the tarball holds `package.json`, `dist/index.js`, both skills, the assets, `README.md` and `LICENSE`, and its entry loads |
 
-CI runs the same gate in one job named `ci`. `dist/` is generated and is not committed, so CI builds it before it packs
-the tarball and runs `plugin-kit check`.
+CI runs the same gate in one job named `ci`. `dist/index.js` is committed, because OpenCode installs the package as it
+is: CI rebundles it, fails when the committed file differs, then packs the tarball and runs `plugin-kit check`.
 
 ## The contract pin
 
@@ -68,5 +68,5 @@ Read the diff before committing it: the fixture must carry no credential and no 
 Releases are tags, not npm packages. A release is prepared in one pull request, `chore(release): prepare vX.Y.Z`: the
 version in `package.json` and `package-lock.json`, the `CHANGELOG.md` section, and `npx plugin-kit docs` if the manifest
 changed. The owner pushes the tag after `master`'s CI passed; the release workflow checks that the tag names the
-package's version, builds, and creates the GitHub release with the packed tarball, the conformance report and
+package's version, checks the committed bundle, and creates the GitHub release with the packed tarball, the conformance report and
 `SHA256SUMS`.
