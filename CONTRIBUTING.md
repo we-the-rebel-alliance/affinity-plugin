@@ -1,34 +1,72 @@
 # Contributing
 
-This repository follows [the plugin standard](https://github.com/we-the-rebel-alliance/plugin-contract/blob/master/docs/plugin-standard.md)
-and [plugin-contract v0](https://github.com/we-the-rebel-alliance/plugin-contract/blob/master/docs/contract.md). Where this
-file is silent, they decide.
+This repository is an OpenCode plugin for Affinity on
+[plugin-contract](https://github.com/we-the-rebel-alliance/plugin-contract) v0. The contract is
+[docs/contract.md](https://github.com/we-the-rebel-alliance/plugin-contract/blob/master/docs/contract.md), the bar for
+every plugin repository is
+[docs/plugin-standard.md](https://github.com/we-the-rebel-alliance/plugin-contract/blob/master/docs/plugin-standard.md),
+and [AGENTS.md](AGENTS.md) is the working guide.
 
-## Commands
+## Set up and check
 
-| Command                                             | Does                                                                                                         |
-| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `npm ci`                                            | installs the dev tooling; there are no runtime dependencies                                                  |
-| `npm run check`                                     | everything CI runs: lint, typecheck, build, unit and conformance tests, `plugin-kit check`, pack             |
-| `npx plugin-kit docs`                               | rewrites the generated doc sections from the manifest                                                        |
-| `npx plugin-kit check`                              | the contract's own gate: T0 and T1, the recorded sources, accounts, bus, status, docs drift, forbidden files |
-| `UPDATE_FIXTURES=1 npx vitest run test/conformance` | rewrites `fixtures/conformance.json`; read the diff before committing                                        |
-| `npx plugin-kit release 0.0.0`                      | cuts a release; CI publishes it                                                                              |
+You need Node 24.
 
-## Rules
+```sh
+npm ci --ignore-scripts
+npm run check
+```
 
-1. **The manifest is the source of truth.** Add a method, source or option in `package.json` `capabilities` first, then
-   its handler, then its tests and its docs. Never register a tool by hand.
-2. **Classify every method truthfully**, including every pass-through tool. A delete is `delete`, a share is `share`, an
-   export is `export`. If in doubt, choose the stricter class.
-3. **Every method takes the account** when it reads an alias's data. Never assume `default`.
-4. **Errors** read `CODE: What happened. Next step: What to do.` from the contract's table.
-5. **No secrets anywhere**: code, docs, fixtures or logs. Fixtures use invented people on `example.test`.
-6. **Greenfield:** no compatibility code, legacy paths, deprecated aliases or dead code. Delete rather than deprecate.
-7. **One endpoint**, named once in `src/provider/`.
-8. **Public OpenCode API only** (`@opencode/plugin` 2.4.1); the kit's forbidden list is final.
+`npm run check` runs the whole gate:
 
-## A pull request
+| Step | What it proves |
+|---|---|
+| `npm run lint` | `@biomejs/biome` finds no lint error |
+| `npm run typecheck` | the sources and tests typecheck under strict settings |
+| `npm run build` | `dist/index.js` is built from `src/index.ts` with esbuild |
+| `npm test` | the unit tests: manifest, provider, events, probe, status, accounts, bus and refusals |
+| `npm run conformance` | `plugin-kit check`: conformance T0 and T1 on the real 2.4.1 host, the recorded fixture, accounts, bus, status, docs drift, the forbidden scan and no bundled kit |
+| `npm run test:pack` | the tarball holds `package.json`, `dist/index.js`, both skills, the assets, `README.md` and `LICENSE`, and its entry loads |
 
-A pull request says what changed, why, which contract section it follows, the exact commands and counts from
-`npm run check`, and any open question. The `ci` check must pass. A release is a tag cut after merge.
+CI runs the same gate in one job named `ci`. `dist/` is generated and is not committed, so CI builds it before it packs
+the tarball and runs `plugin-kit check`.
+
+## The contract pin
+
+`package.json` pins the contract to `github:we-the-rebel-alliance/plugin-contract#v0.0.0`, and `package-lock.json`
+resolves it to `f7f0e011f6c036766e721ead9d4d902587e04c44`. Move the pin to the contract's next release tag; never follow
+a branch, and never copy a contract module into this repository.
+
+The lock records the contract's repository over `git+ssh`, as npm writes a GitHub dependency. CI rewrites that URL to
+HTTPS because a runner has no SSH key; do the same locally if `npm ci` cannot reach GitHub.
+
+## Pull requests
+
+One change per pull request, based on `master`, with a conventional commit (`feat:`, `fix:`, `docs:`, `chore:`). The
+pull request says what changed and why, the contract section it implements, the exact commands and counts from
+`npm run check`, and any open question. A change to the manifest needs `npx plugin-kit docs` in the same pull request.
+
+A new method, source or option starts in `package.json` `capabilities`, then its handler in `src/handlers/`, then its
+tests, then `npx plugin-kit docs`, then `npx plugin-kit check`. Every capability has tests, including its negative
+cases. Affinity's pass-through tools are classified in `methods` and never proxied by code here.
+
+## Fixtures
+
+`fixtures/conformance.json` is the plugin's evidence to the conformance kit, recorded for the two synthetic aliases
+`work` and `personal`. `test/conformance/fixture.test.ts` drives the real handlers over the fake Affinity MCP transport
+in `test/conformance/fake.ts`, rebuilds the fixture and fails on any drift. Regenerate it with:
+
+```sh
+UPDATE_FIXTURES=1 npx vitest run test/conformance
+```
+
+Read the diff before committing it: the fixture must carry no credential and no person's data. `npx plugin-kit record
+--check` says whether it does. When a real account is used instead of the fake, record with
+`npx plugin-kit record --account work`, which redacts credentials, emails, phone numbers and home directories.
+
+## Releases
+
+Releases are tags, not npm packages. A release is prepared in one pull request, `chore(release): prepare vX.Y.Z`: the
+version in `package.json` and `package-lock.json`, the `CHANGELOG.md` section, and `npx plugin-kit docs` if the manifest
+changed. The owner pushes the tag after `master`'s CI passed; the release workflow checks that the tag names the
+package's version, builds, and creates the GitHub release with the packed tarball, the conformance report and
+`SHA256SUMS`.

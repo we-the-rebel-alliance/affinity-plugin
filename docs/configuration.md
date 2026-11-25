@@ -75,16 +75,6 @@ A read runs; a change asks first, in OpenCode's own permission prompt, which eve
 
 ## An untested OpenCode release
 
-```jsonc
-{
-  "plugins": [
-    {
-      "package": "@we-the-rebel-alliance/affinity-plugin",
-      "options": { "allowUntestedHost": true }
-    }
-  ]
-}
-```
-
-The plugin starts on OpenCode outside `>=2.4.1 <2.5.0` instead of refusing with `HOST_UNTESTED`. Leave it off unless
-you are testing the release; the plugin's rules may not hold there.
+`allowUntestedHost` exists for testing a release outside `>=2.4.1 <2.5.0`: when it is set, the plugin starts instead of
+refusing with `HOST_UNTESTED`. Leave it at its default `false` unless you are testing that release; the plugin's rules
+may not hold there. It is not a supported configuration and no example here sets it.

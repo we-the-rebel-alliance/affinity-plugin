@@ -10,7 +10,15 @@
     "affinity"
   ],
   "license": "MIT",
-  "repository": "github:we-the-rebel-alliance/affinity-plugin",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/we-the-rebel-alliance/affinity-plugin.git"
+  },
+  "homepage": "https://github.com/we-the-rebel-alliance/affinity-plugin#readme",
+  "bugs": "https://github.com/we-the-rebel-alliance/affinity-plugin/issues",
+  "engines": {
+    "node": ">=24"
+  },
   "exports": {
     "./server": "./dist/index.js"
   },
