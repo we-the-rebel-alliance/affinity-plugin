@@ -331,6 +331,8 @@ async function listEvents(parts: EventsParts, cache: Map<string, CachedIdentity>
   if (request.source !== undefined && request.source !== SOURCE) throw fail("SOURCE_UNKNOWN", "This plugin lists one source, affinity", 'Leave source out, or pass "affinity".')
   const account = call.account
   const now = parts.now()
+  // The cursor carries the filter: its position is the last (start, id) this read listed, so a continuation resumes
+  // strictly after it and never restarts at `since`. A caller's `since` on a cursor call is ignored, as the contract says.
   const given = request.cursor === undefined ? undefined : stateOf(request.cursor, account)
 
   // Where this listing starts: the cursor's state, or since; never before the read-back, and a page that starts at the
