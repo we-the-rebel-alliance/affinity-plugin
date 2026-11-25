@@ -1,8 +1,7 @@
 node_modules/
 dist/
+coverage/
 *.tgz
-.env
-.env.*
+.pack-test/
 *.log
 .DS_Store
-/reports/
