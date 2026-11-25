@@ -39,10 +39,10 @@ describe("the plugin on OpenCode 2.4.1", () => {
     }
   })
 
-  test("registers the same three methods over RPC, with the changed event", () => {
+  test("registers the same three methods over RPC, with no bus event", () => {
     expect(host.rpc?.id).toBe("affinity")
     expect([...(host.rpc?.methods ?? [])].sort()).toEqual(["events_list", "probe", "status"])
-    expect(host.rpc?.events).toEqual(["changed"])
+    expect(host.rpc?.events).toEqual([])
   })
 
   test("answers status over RPC with a validating answer", async () => {
@@ -51,7 +51,7 @@ describe("the plugin on OpenCode 2.4.1", () => {
     if (!answer.ok) return
     const status = answer.output as { name: string; version: string; host: unknown; state: string; accounts: { alias: string; state: string }[]; nextStep: string | null }
     expect(status.name).toBe("affinity")
-    expect(status.version).toBe("0.0.0")
+    expect(status.version).toBe("0.0.8")
     expect(status.host).toEqual({ version: "2.4.1", range: ">=2.4.1 <2.5.0", tested: ["2.4.1"] })
     // No Affinity sign-in exists in this host: the honest state is "sign in", and a host that is still connecting says ready.
     expect(["ready", "needs_sign_in"]).toContain(status.state)

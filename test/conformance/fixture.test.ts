@@ -17,7 +17,6 @@ import { accountsOf, resolveAccount } from "@we-the-rebel-alliance/plugin-contra
 import type { Bus, BusEmitResult } from "@we-the-rebel-alliance/plugin-contract/bus"
 import type { MethodCall } from "@we-the-rebel-alliance/plugin-contract/register"
 import { describe, expect, test } from "vitest"
-import { registerChangedHook } from "../../src/bus.ts"
 import { createHandlers } from "../../src/handlers/index.ts"
 import { manifest, PACKAGE } from "../../src/manifest.ts"
 import { createProvider } from "../../src/provider/index.ts"
@@ -104,25 +103,6 @@ async function page(handlers: TestHandlers, label: string, input: Record<string,
   return { label, input, ...(expect === undefined ? {} : { expect }), answer: outcome.answer }
 }
 
-/** A tool hook domain that captures the one `execute.after` callback, so a test can drive it. */
-function capturingHook() {
-  const callbacks: ((event: unknown) => Promise<void>)[] = []
-  const ctx = {
-    tool: {
-      hook: async (_name: string, callback: (event: unknown) => Promise<void>) => {
-        callbacks.push(callback)
-        return { dispose: async () => undefined }
-      }
-    }
-  }
-  return {
-    ctx,
-    async fire(event: unknown) {
-      for (const callback of callbacks) await callback(event)
-    }
-  }
-}
-
 /** The recording. */
 async function record() {
   const first = handlersFor()
@@ -179,23 +159,7 @@ async function record() {
   const snapshot = await call(() => first.handlers.events_list.run({ source: "affinity", list: "companies" }, callOf("work")))
   const status = await call(() => first.handlers.status.run({}, callOf("work")))
 
-  // The bus: one write tool completes, one read tool completes, and one write fails; only the completed write nudges.
-  const emitted: unknown[] = []
-  const bus: Bus = {
-    name: "affinity",
-    emit: async (event, data) => {
-      emitted.push({ event, data })
-      return { ok: true }
-    }
-  }
-  const captured = capturingHook()
-  const hook = await registerChangedHook(captured.ctx as never, bus, ["work", "personal"])
-  await captured.fire({ tool: "affinity-work_create_company", status: "completed" })
-  await captured.fire({ tool: "affinity-work_get_meetings", status: "completed" })
-  await captured.fire({ tool: "affinity-personal_update_note", status: "error" })
-  await hook.dispose()
-  if (emitted.length !== 1) throw new Error(`the changed hook emitted ${emitted.length} events, not one`)
-
+  // The plugin installs no per-request hook and emits no bus event: it makes no write of its own.
   const required = resolveAccount(PROFILES, {})
   const unknown = resolveAccount(PROFILES, { account: "nobodyhere" })
   if (required.ok || unknown.ok) throw new Error("the two-account refusals did not refuse")
@@ -223,7 +187,7 @@ async function record() {
       }
     },
     events: {
-      emitted: ["changed"],
+      emitted: [],
       status: answerOf(status)
     }
   }

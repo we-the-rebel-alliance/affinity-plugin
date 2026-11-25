@@ -22,7 +22,6 @@ Affinity MCP server and OAuth.
 | Capability ids                    | `affinity.meetings`, `affinity.companies`                                  |
 | Accounts                          | `mcp`: `affinity` for `default`, `affinity-<alias>` for others             |
 | Permission actions                | `affinity.<method>`, and `affinity-<alias>_<tool>` for a pass-through tool |
-| Bus event                         | `rpc.affinity.changed`                                                     |
 
 ## Commands
 
@@ -30,25 +29,25 @@ Affinity MCP server and OAuth.
 | --------------------------------------------------- | ------------------------------------------------------------------------------------------ |
 | `npm ci --ignore-scripts`                           | installs dev tooling only; there are no runtime dependencies                               |
 | `npm run check`                                     | the whole gate: lint, typecheck, bundle, dist freshness, tests, conformance, pack          |
-| `npx plugin-kit check`                              | the contract's gate: T0/T1, recorded sources, accounts, bus, status, docs drift, forbidden |
+| `npx plugin-kit check`                              | the contract's gate: T0/T1, recorded sources, accounts, status, docs drift, forbidden |
 | `npx plugin-kit docs`                               | regenerates the generated doc sections from the manifest                                   |
 | `UPDATE_FIXTURES=1 npx vitest run test/conformance` | rewrites `fixtures/conformance.json` from the real handlers                                |
-| `npx plugin-kit release 0.0.0 --dry-run`            | checks a release; the owner pushes the tag and CI publishes it                             |
+| `npx plugin-kit release 0.0.8 --dry-run`            | checks a release; the owner pushes the tag and CI publishes it                             |
 
 ## Layout
 
 ```
 dist/index.js            the committed bundle; run npm run bundle and commit what it writes
-src/index.ts             Plugin.define → assertHost, registerAccounts, register, one tool hook
+src/index.ts             Plugin.define → assertHost, loadSkills, registerAccounts, register
 src/manifest.ts          reads ../package.json: the manifest and the installed version
 src/accounts.ts          the profile, one server name per alias, the MCP server config
+src/skills.ts            reads skills/<id>/SKILL.md and registers them through ctx.skill.transform
 src/provider/index.ts    the only place the endpoint is named; tool calls, states and error codes
 src/provider/answers.ts  Affinity's field names; the meetings, whoami and companies readers
 src/handlers/            status, events_list, probe, and the one handler table
-src/bus.ts               the execute.after hook that emits changed
-test/unit                the manifest, provider, events, probe, status, accounts, bus and refusals
+test/unit                the manifest, provider, events, probe, status, accounts, skills and refusals
 test/conformance         the real handlers over a fake Affinity transport, recorded into fixtures/conformance.json
-test/host                the built bundle in the real OpenCode 2.4.1 host
+test/host                the built bundle in the real OpenCode 2.4.1 host, including its skills list in an empty project
 test/pack                the tarball npm pack builds
 skills/                  affinity (reads) and affinity-write (changes)
 docs/                    capabilities, accounts, configuration, architecture, automations, security
@@ -74,9 +73,12 @@ docs/                    capabilities, accounts, configuration, architecture, au
 
 - **Gate the host first.** `assertHost(ctx, manifest)` at the top of `setup` refuses an untested release with
   `HOST_UNTESTED` unless `options.allowUntestedHost` is true.
-- **Emit through the bus the register built.** `register` returns `registration.bus`; handlers get `call.bus`. The
-  plugin's one bus emission is the `execute.after` hook in `src/bus.ts`, which uses `registration.bus` and adds no model
-  text. Do not add a second hook, a per-request hook or a cost line.
+- **No bus event and no per-request hook.** The plugin makes no write of its own and receives no webhook, so contract §10
+  has nothing to nudge. It installs no `execute.after` hook and declares no event; `register` still owns the one RPC
+  registration.
+- **Register the skills once.** `loadSkills` reads every `skills/<id>/SKILL.md` and validates its frontmatter;
+  `registerSkills` adds them through `ctx.skill.transform`. A missing or broken file is a `status` problem, never a
+  setup failure.
 - **Answer status with `statusAnswer`.** It builds the `STATUS_SCHEMA` answer from the manifest, the versions, the
   account states, the problems setup recorded and `await call.unguardedAgents()`, passed straight through: the result
   is `{ ok, agents | error }`, and `statusAnswer` records a failed list as a problem itself. Keep no state between

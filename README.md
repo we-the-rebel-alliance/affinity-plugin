@@ -10,11 +10,11 @@ accounts can be signed in at once, one per Affinity organisation or person.
 ## Install
 
 ```sh
-opencode plugin add github:we-the-rebel-alliance/affinity-plugin#v0.0.0
+opencode plugin add github:we-the-rebel-alliance/affinity-plugin#v0.0.8
 ```
 
-`v0.0.0` is this repository's first release, cut from the release pull request. Nothing else is needed: there are no
-runtime dependencies, and the built entry is committed, so the install needs no build step.
+`v0.0.8` is this repository's first release on plugin-contract, cut from the release pull request. Nothing else is
+needed: there are no runtime dependencies, and the built entry is committed, so the install needs no build step.
 
 ## Sign in
 
@@ -28,7 +28,7 @@ Several accounts, each signed in on its own:
 {
   "plugins": [
     {
-      "package": "github:we-the-rebel-alliance/affinity-plugin#v0.0.0",
+      "package": "github:we-the-rebel-alliance/affinity-plugin#v0.0.8",
       "options": {
         "accounts": {
           "work": {},
@@ -47,6 +47,13 @@ The sign-in asks for the scopes `mcp`, `mcp.read` and `offline_access`: changes,
 profile's `clientId`, OpenCode signs in with its own client metadata document; an Affinity admin may first have to add
 OpenCode's client URL under Settings, Manage Apps. A profile's `clientId` (a UUID) signs in as your organisation's own
 Public OAuth app instead.
+
+## Skills
+
+The plugin ships two skills, and OpenCode loads both when the plugin starts: `affinity` for reads and
+`affinity-write` for changes. `affinity` says when to use the plugin, how to find a company, a person or a deal, how to
+pick an account and what the quota allows. `affinity-write` says what a change reaches — the firm's shared CRM, the
+organisation, a colleague or Affinity itself — and when to ask before a delete or a merge.
 
 ## Options
 
@@ -200,7 +207,7 @@ None.
 
 ### Bus events
 
-`rpc.affinity.changed`
+None.
 <!-- /generated:capabilities -->
 
 ## Errors
@@ -233,6 +240,10 @@ Every failure reads `CODE: What happened. Next step: What to do.`
 | `UNAVAILABLE` | the provider could not be reached |
 <!-- /generated:errors -->
 
+The plugin's own code is `SKILLS_INVALID`: a bundled skill file is missing or broken, and `status` reports it without
+stopping the plugin. The contract's table above is generated; this one code is the plugin's until the manifest can
+declare it.
+
 ## Troubleshooting
 
 - **`NEEDS_SIGN_IN`**: the alias's MCP server has no sign-in. Run `/connect` and choose that server (`affinity`,
@@ -246,6 +257,8 @@ Every failure reads `CODE: What happened. Next step: What to do.`
 - **`CURSOR_INVALID`**: a cursor belongs to the account and source that issued it. Pass it with the same `account`, or
   start again with `since`.
 - **`HOST_UNTESTED`**: OpenCode is outside the plugin's tested range (`>=2.4.1 <2.5.0`). Pin a supported release.
+- **`SKILLS_INVALID`**: a bundled `skills/<id>/SKILL.md` is missing or broken. Reinstall the plugin; `status` names the
+  file and the next step. The plugin still starts and its tools still work.
 - **An alias that stays in error**: its MCP server is missing, disabled or failed. Check `options.accounts`, then reload
   the plugin; `status` (`tools.affinity.status` in Code Mode) names the state and the next step.
 
@@ -256,7 +269,7 @@ Every failure reads `CODE: What happened. Next step: What to do.`
 - [Capabilities](docs/capabilities.md): the sources, the methods and what each one reads.
 - [Accounts](docs/accounts.md): aliases, profiles and signing in.
 - [Configuration](docs/configuration.md): every option and an example.
-- [Architecture](docs/architecture.md): the layers, the provider, what is cached and the one tool hook.
+- [Architecture](docs/architecture.md): the layers, the provider, the skills and what is cached.
 - [Automations](docs/automations.md): collecting meetings with an OpenCode automation.
 - [Security](docs/security.md): what leaves the machine, the scopes, and redaction.
 - [Contributing](CONTRIBUTING.md) and [Security policy](SECURITY.md).

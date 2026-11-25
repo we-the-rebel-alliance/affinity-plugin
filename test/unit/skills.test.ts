@@ -1,0 +1,64 @@
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises"
+import { tmpdir } from "node:os"
+import { join } from "node:path"
+import { statusAnswer } from "@we-the-rebel-alliance/plugin-contract/accounts"
+import { describe, expect, test } from "vitest"
+import { manifest } from "../../src/manifest.ts"
+import { loadSkills, parseSkill } from "../../src/skills.ts"
+
+const skill = (name: string, description: string, body: string) => `---\nname: ${name}\ndescription: ${description}\n---\n\n${body}\n`
+const path = (name: string) => `/tmp/skills/${name}/SKILL.md`
+
+describe("parseSkill", () => {
+  test("reads the name, description and body of a valid skill", () => {
+    const parsed = parseSkill("affinity", path("affinity"), skill("affinity", "Use Affinity.", "The body."))
+    expect(parsed.id).toBe("affinity")
+    expect(parsed.name).toBe("affinity")
+    expect(parsed.description).toBe("Use Affinity.")
+    expect(parsed.path).toBe(path("affinity"))
+    expect(parsed.content).toBe("The body.")
+  })
+
+  test("refuses a name that is not its directory", () => {
+    expect(() => parseSkill("affinity", path("affinity"), skill("other", "Use Affinity.", "The body."))).toThrow(/must be named "affinity"/)
+  })
+
+  test("refuses a missing description", () => {
+    expect(() => parseSkill("affinity", path("affinity"), "---\nname: affinity\n---\n\nThe body.")).toThrow(/has no description/)
+  })
+
+  test("refuses an empty body", () => {
+    expect(() => parseSkill("affinity", path("affinity"), "---\nname: affinity\ndescription: Use Affinity.\n---\n\n")).toThrow(/has an empty body/)
+  })
+})
+
+describe("a broken skill", () => {
+  test("reports SKILLS_INVALID in status for a missing and a broken file", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "affinity-skills-"))
+    try {
+      await mkdir(join(directory, "ok"), { recursive: true })
+      await writeFile(join(directory, "ok", "SKILL.md"), skill("ok", "Use ok.", "The body."))
+      await mkdir(join(directory, "missing"), { recursive: true })
+      await mkdir(join(directory, "broken"), { recursive: true })
+      await writeFile(join(directory, "broken", "SKILL.md"), skill("wrong", "Use broken.", "The body."))
+
+      const { skills, problems } = await loadSkills(directory)
+      expect(skills.map((loaded) => loaded.id)).toEqual(["ok"])
+      expect(problems).toHaveLength(2)
+      expect(problems.every((problem) => problem.startsWith("SKILLS_INVALID:"))).toBe(true)
+
+      const answer = statusAnswer({
+        manifest,
+        version: "0.0.8",
+        hostVersion: "2.4.1",
+        accounts: [],
+        problems,
+        unguardedAgents: { ok: true, agents: [] }
+      })
+      expect(answer.state).toBe("error")
+      expect(String(answer.nextStep)).toContain("SKILLS_INVALID")
+    } finally {
+      await rm(directory, { recursive: true, force: true })
+    }
+  })
+})

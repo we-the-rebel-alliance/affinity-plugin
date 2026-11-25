@@ -18,6 +18,8 @@ export interface HandlerParts {
   readonly hostVersion: string
   /** What registering the accounts, or reading their options, could not do. */
   readonly accountProblems: readonly string[]
+  /** What reading the bundled skills could not do, one sentence each. */
+  readonly skillProblems?: readonly string[] | undefined
   /** The aliases and profiles the options name. */
   readonly profiles: readonly AccountProfile[]
   /** The clock; tests fix it. */
@@ -32,6 +34,7 @@ export function createHandlers(parts: HandlerParts): HandlerTable {
       provider: parts.provider,
       hostVersion: parts.hostVersion,
       problems: parts.accountProblems,
+      skillProblems: parts.skillProblems,
       profiles: parts.profiles
     }),
     events_list: eventsHandler({ provider: parts.provider, now }),

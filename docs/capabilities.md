@@ -128,7 +128,7 @@ None.
 
 ### Bus events
 
-`rpc.affinity.changed`
+None.
 <!-- /generated:capabilities -->
 
 ## Sources
@@ -177,8 +177,3 @@ The manifest declares no `actions`. Every change is one of Affinity's own tools,
 `delete` or `export`, and gated by OpenCode's permission rules. There is no plan/commit pair to preview: Affinity's own
 tools take a `confirm: false` flag inside the same call where they support a preview, which is Affinity's input, not
 this plugin's.
-
-## The bus
-
-One event, `changed`, emitted after a completed non-read pass-through call for the alias whose server ran it. See
-[architecture](architecture.md) for the one tool hook and why it adds no model text.

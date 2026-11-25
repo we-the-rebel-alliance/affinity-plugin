@@ -15,12 +15,12 @@ is the same schema the plugin validates.
 
 ```jsonc
 {
-  "plugins": ["@we-the-rebel-alliance/affinity-plugin"]
+  "plugins": [{ "package": "github:we-the-rebel-alliance/affinity-plugin#v0.0.8" }]
 }
 ```
 
-No options at all: one default account, `affinity`, signed in with `/connect`. The plugin's options live on its entry
-when the entry is an object: `{ "package": "github:we-the-rebel-alliance/affinity-plugin#v0.0.0", "options": { … } }`.
+No options at all: one default account, `affinity`, signed in with `/connect`. Options go on the same entry:
+`{ "package": "github:we-the-rebel-alliance/affinity-plugin#v0.0.8", "options": { … } }`.
 
 ## Two accounts, each with its own profile
 
@@ -28,7 +28,7 @@ when the entry is an object: `{ "package": "github:we-the-rebel-alliance/affinit
 {
   "plugins": [
     {
-      "package": "github:we-the-rebel-alliance/affinity-plugin#v0.0.0",
+      "package": "github:we-the-rebel-alliance/affinity-plugin#v0.0.8",
       "options": {
         "accounts": {
           "work": {},
@@ -48,7 +48,7 @@ when the entry is an object: `{ "package": "github:we-the-rebel-alliance/affinit
 {
   "plugins": [
     {
-      "package": "github:we-the-rebel-alliance/affinity-plugin#v0.0.0",
+      "package": "github:we-the-rebel-alliance/affinity-plugin#v0.0.8",
       "options": { "access": "read-only", "accounts": { "work": {} } }
     }
   ]
@@ -64,7 +64,7 @@ screen narrows, never widens.
 {
   "plugins": [
     {
-      "package": "github:we-the-rebel-alliance/affinity-plugin#v0.0.0",
+      "package": "github:we-the-rebel-alliance/affinity-plugin#v0.0.8",
       "options": { "access": "ask-changes", "accounts": { "work": {}, "personal": {} } }
     }
   ]
