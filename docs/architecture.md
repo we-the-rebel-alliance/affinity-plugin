@@ -7,10 +7,10 @@ own tools stay Affinity's: the manifest declares them and the plugin writes no p
 
 | File                      | Does                                                                                                             |
 | ------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `src/index.ts`            | `Plugin.define`, `assertHost`, `loadSkills`, `registerAccounts`, one `register`                                 |
+| `src/index.ts`            | `Plugin.define`, `assertHost`, `readSkills`, `registerSkills`, `registerAccounts`, one `register`                |
 | `src/manifest.ts`         | reads `../package.json`; the manifest and the installed version                                                  |
 | `src/accounts.ts`         | the profile, the one server name per alias, the MCP server config                                                |
-| `src/skills.ts`           | reads `skills/<id>/SKILL.md`, validates its frontmatter and registers it through `ctx.skill.transform`           |
+| `src/skills.ts`           | reads every `skills/<id>/SKILL.md`, parses its YAML frontmatter (including `>` and `|` block scalars), checks it and registers it with `ctx.skill.transform` |
 | `src/provider/index.ts`   | the only place the endpoint is named; `ctx.tool.list()` and `tool.execute` per alias; the contract's error codes |
 | `src/provider/answers.ts` | Affinity's API v2 field names; the readers for meetings, whoami and companies                                    |
 | `src/handlers/`           | `status`, `events_list`, `probe`, and the one handler table                                                      |
@@ -46,10 +46,11 @@ methods take `account` and resolve it through the contract's `accounts` module.
 
 ## Skills
 
-`loadSkills()` reads every `skills/<id>/SKILL.md` once at setup. It validates that the frontmatter `name` equals the
-directory, that a description exists and that the body is not empty, then `registerSkills(ctx.skill, skills)` adds each
-valid skill through OpenCode's skill editor. A missing or broken file does not stop the plugin: the problem is passed to
-`status` as `SKILLS_INVALID` with a reinstall next step, and the plugin's tools still work.
+`readSkills()` reads every `skills/<id>/SKILL.md` once at setup and parses its frontmatter as YAML. It validates that
+the frontmatter `name` equals the directory, that a description exists and that the body is not empty, then
+`registerSkills(ctx, skills)` adds each skill through OpenCode's skill editor. A `>` or `|` block scalar registers its
+folded or literal text, never the marker. A malformed file throws `SCHEMA_VIOLATION` at setup with a fix-the-file next
+step, so a broken package fails with one clear error instead of loading without its skills.
 
 ## What is cached
 

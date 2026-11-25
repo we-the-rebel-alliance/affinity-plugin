@@ -5,13 +5,13 @@
  * skills even if the plugin never registered them. This run points the host at an empty temporary project, and at an
  * empty HOME so no user skill can shadow one, then asks the host's own skill list. Every `skills/<id>/SKILL.md` must be
  * there under this package's path: that is the proof that `ctx.skill.transform` ran at setup. Each registered
- * description must equal the text a real YAML parser reads from that file, so a description the plugin's reader cannot
- * read (a `>` or `|` block scalar) fails here instead of reaching the host as ">".
+ * description must equal the text a real YAML parser reads from that file, so a description the loader cannot read (a
+ * `>` or `|` block marker) fails here instead of reaching the host as ">".
  */
-import { cp, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises"
+import { mkdtemp, readdir, readFile, rm } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { fileURLToPath, pathToFileURL } from "node:url"
+import { fileURLToPath } from "node:url"
 import type { Plugin } from "@opencode/plugin"
 import { waitForActivation } from "@we-the-rebel-alliance/plugin-contract/kit"
 import { afterAll, beforeAll, describe, expect, test } from "vitest"
@@ -22,7 +22,7 @@ const skillsDir = join(root, "skills")
 const HOME_KEYS = ["HOME", "XDG_CONFIG_HOME", "XDG_CACHE_HOME", "XDG_DATA_HOME", "XDG_STATE_HOME"] as const
 type HomeKey = (typeof HOME_KEYS)[number]
 
-/** A SKILL.md's frontmatter as a real YAML parser reads it: the test's own answer, independent of the plugin's reader. */
+/** A SKILL.md's frontmatter as a real YAML parser reads it: the test's own answer, independent of the plugin's loader. */
 function frontmatter(text: string): Record<string, unknown> {
   const match = /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/.exec(text)
   if (!match) throw new Error("SKILL.md has no frontmatter")
@@ -75,7 +75,7 @@ afterAll(async () => {
 })
 
 describe("the built plugin's skills on OpenCode 2.4.1", () => {
-  test("registers every skills/*/SKILL.md in an empty project", async () => {
+  test("registers every skills/*/SKILL.md in an empty project with its YAML description", async () => {
     const { OpenCode } = await import("@opencode/sdk")
     const loaded = (await import(new URL("../../dist/index.js", import.meta.url).href)) as { readonly default: Plugin.Plugin }
     const host = await OpenCode.create({
@@ -107,8 +107,7 @@ describe("the built plugin's skills on OpenCode 2.4.1", () => {
         const expected = parsed["description"]
         if (typeof expected !== "string") throw new Error(`SKILL.md for "${id}" has no description`)
         expect(expected.trim()).not.toBe("")
-        expect(expected).not.toBe(">")
-        expect(expected).not.toBe("|")
+        for (const marker of [">", "|", ">-", "|-", ">+", "|+"]) expect(expected.trim(), `the ${id} skill registers the block marker ${marker}`).not.toBe(marker)
         expect(skill?.path).toBe(join(skillsDir, id, "SKILL.md"))
         expect(skill?.name).toBe(id)
         expect(skill?.description).toBe(expected)
@@ -116,62 +115,6 @@ describe("the built plugin's skills on OpenCode 2.4.1", () => {
       }
     } finally {
       await host.close()
-    }
-  }, 60_000)
-
-  test("still loads with a missing or broken skill and reports SKILLS_INVALID in status", async () => {
-    const pkg = await mkdtemp(join(root, "test", ".broken-skills-"))
-    const brokenProject = await mkdtemp(join(tmpdir(), "affinity-broken-project-"))
-    const brokenSkills = join(pkg, "skills")
-    try {
-      await mkdir(join(pkg, "dist"), { recursive: true })
-      await cp(join(root, "dist", "index.js"), join(pkg, "dist", "index.js"))
-      await cp(join(root, "package.json"), join(pkg, "package.json"))
-      await mkdir(join(brokenSkills, "ok"), { recursive: true })
-      await writeFile(join(brokenSkills, "ok", "SKILL.md"), "---\nname: ok\ndescription: Use ok.\n---\n\nThe body.\n")
-      await mkdir(join(brokenSkills, "missing"), { recursive: true })
-      await mkdir(join(brokenSkills, "broken"), { recursive: true })
-      await writeFile(join(brokenSkills, "broken", "SKILL.md"), "---\nname: wrong\ndescription: Use broken.\n---\n\nThe body.\n")
-
-      const { OpenCode } = await import("@opencode/sdk")
-      const loaded = (await import(pathToFileURL(join(pkg, "dist", "index.js")).href)) as { readonly default: Plugin.Plugin }
-      const host = await OpenCode.create({
-        plugins: [loaded.default],
-        config: { directory: brokenProject },
-        app: { name: "opencode", version: "2.4.1" },
-        log: { level: "error", emit: () => undefined }
-      })
-      try {
-        const session = await host.sessions.create({ location: { directory: brokenProject }, agent: "build", permissions: [] })
-        await host.sessions.prompt({ sessionID: session.id, text: "activate the broken-skills test", delivery: "queue" }).catch(() => undefined)
-        await waitForActivation({
-          isActive: async () => {
-            const list = (await host.plugin.list({ location: { directory: brokenProject } })) as { readonly data: readonly ListedPlugin[] }
-            return list.data.some((entry) => entry.id === "affinity" && entry.state.status === "active")
-          },
-          timeoutMs: 30_000
-        })
-        const listed = (await host.skill.list({ location: { directory: brokenProject } })) as { readonly data: readonly ListedSkill[] }
-        const own = listed.data
-          .filter((skill) => skill.path.startsWith(`${brokenSkills}/`))
-          .map((skill) => skill.id)
-          .sort()
-        expect(own).toEqual(["ok"])
-        const answer = await host.rpc.call({
-          rpcID: "affinity",
-          method: "status",
-          input: { sessionID: session.id, input: {} },
-          location: { directory: brokenProject }
-        })
-        const status = answer?.output as { readonly state?: string; readonly nextStep?: string } | undefined
-        expect(status?.state).toBe("error")
-        expect(String(status?.nextStep)).toContain("SKILLS_INVALID")
-      } finally {
-        await host.close()
-      }
-    } finally {
-      await rm(pkg, { recursive: true, force: true })
-      await rm(brokenProject, { recursive: true, force: true })
     }
   }, 60_000)
 })

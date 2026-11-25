@@ -18,8 +18,6 @@ export interface StatusParts {
   readonly hostVersion: string
   /** What registering the accounts could not do. */
   readonly problems: readonly string[]
-  /** What reading the bundled skills could not do, one sentence each. */
-  readonly skillProblems?: readonly string[] | undefined
   /** The aliases and profiles the options name. */
   readonly profiles: readonly AccountProfile[]
 }
@@ -39,7 +37,7 @@ export function statusHandler(parts: StatusParts): MethodHandler {
     input: { type: "object", properties: {}, additionalProperties: false },
     output: STATUS_SCHEMA,
     async run(_input, call) {
-      const problems = [...parts.problems, ...(parts.skillProblems ?? [])]
+      const problems = [...parts.problems]
       const signals: Record<string, AccountSignal> = {}
       for (const profile of parts.profiles) {
         try {

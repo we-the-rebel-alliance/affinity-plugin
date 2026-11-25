@@ -12,8 +12,10 @@ The first release on plugin-contract: Affinity for OpenCode, built on [plugin-co
 - `probe`: the provider-confirmed owner of an alias and its sign-in scopes, without reading content.
 - `status`: the plugin's state, its OpenCode range and one entry per alias, without an Affinity call.
 - The two skills, `affinity` for reads and `affinity-write` for changes, are read from `skills/<id>/SKILL.md` at setup
-  and registered through `ctx.skill.transform`, so OpenCode loads them; a missing or broken file is reported in `status`
-  and does not stop the plugin.
+  and registered through `ctx.skill.transform`, so OpenCode loads them.
+- The skill frontmatter is parsed as YAML, so a `description: >` or `description: |` block scalar registers its folded or
+  literal text instead of the marker; invalid YAML, a missing field or an empty body fails setup with
+  `SCHEMA_VIOLATION` and a fix-the-file next step.
 - All 103 of Affinity's MCP tools classified in the manifest — 68 read, 22 write, 1 send, 1 share, 10 delete and
   1 export — so OpenCode's access levels cover reads and changes before they run.
 - No actions and no plan/commit pair: every change is Affinity's own tool. Metered cost: each call shares the firm's
