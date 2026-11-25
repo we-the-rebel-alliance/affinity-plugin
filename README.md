@@ -207,7 +207,7 @@ None.
 
 ### Bus events
 
-`rpc.affinity.changed`
+None.
 <!-- /generated:capabilities -->
 
 ## Errors
@@ -240,6 +240,10 @@ Every failure reads `CODE: What happened. Next step: What to do.`
 | `UNAVAILABLE` | the provider could not be reached |
 <!-- /generated:errors -->
 
+The plugin's own code is `SKILLS_INVALID`: a bundled skill file is missing or broken, and `status` reports it without
+stopping the plugin. The contract's table above is generated; this one code is the plugin's until the manifest can
+declare it.
+
 ## Troubleshooting
 
 - **`NEEDS_SIGN_IN`**: the alias's MCP server has no sign-in. Run `/connect` and choose that server (`affinity`,
@@ -253,6 +257,8 @@ Every failure reads `CODE: What happened. Next step: What to do.`
 - **`CURSOR_INVALID`**: a cursor belongs to the account and source that issued it. Pass it with the same `account`, or
   start again with `since`.
 - **`HOST_UNTESTED`**: OpenCode is outside the plugin's tested range (`>=2.4.1 <2.5.0`). Pin a supported release.
+- **`SKILLS_INVALID`**: a bundled `skills/<id>/SKILL.md` is missing or broken. Reinstall the plugin; `status` names the
+  file and the next step. The plugin still starts and its tools still work.
 - **An alias that stays in error**: its MCP server is missing, disabled or failed. Check `options.accounts`, then reload
   the plugin; `status` (`tools.affinity.status` in Code Mode) names the state and the next step.
 
@@ -263,7 +269,7 @@ Every failure reads `CODE: What happened. Next step: What to do.`
 - [Capabilities](docs/capabilities.md): the sources, the methods and what each one reads.
 - [Accounts](docs/accounts.md): aliases, profiles and signing in.
 - [Configuration](docs/configuration.md): every option and an example.
-- [Architecture](docs/architecture.md): the layers, the provider, what is cached and the one tool hook.
+- [Architecture](docs/architecture.md): the layers, the provider, the skills and what is cached.
 - [Automations](docs/automations.md): collecting meetings with an OpenCode automation.
 - [Security](docs/security.md): what leaves the machine, the scopes, and redaction.
 - [Contributing](CONTRIBUTING.md) and [Security policy](SECURITY.md).

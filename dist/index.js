@@ -12235,27 +12235,6 @@ var manifest = pkg.capabilities;
 var version2 = pkg.version;
 var PACKAGE = pkg.name;
 
-// src/bus.ts
-var CHANGED_CAPABILITY = "affinity.meetings";
-var CHANGED_REASON = "write";
-function changedTools(aliases) {
-  const byTool = /* @__PURE__ */ new Map();
-  for (const [method, item2] of Object.entries(manifest.methods)) {
-    if (!method.startsWith("mcp:") || item2.class === "read") continue;
-    for (const alias of aliases) byTool.set(toolAction(serverName(alias), method.slice("mcp:".length)), alias);
-  }
-  return byTool;
-}
-async function registerChangedHook(ctx, bus, aliases) {
-  const byTool = changedTools(aliases);
-  return ctx.tool.hook("execute.after", async (event) => {
-    if (event.status !== "completed") return;
-    const account = byTool.get(event.tool);
-    if (account === void 0) return;
-    await bus.emit("changed", { capability: CHANGED_CAPABILITY, account, reason: CHANGED_REASON });
-  });
-}
-
 // src/provider/answers.ts
 var COMPANIES_LIST = "companies";
 var LIST_CAP = 50;
@@ -12899,15 +12878,9 @@ var index_default = Plugin.define({
         profiles: plan.ok ? plan.value.accounts : []
       })
     );
-    const hook = await registerChangedHook(
-      ctx,
-      registration.bus,
-      accounts.accounts.map((account) => account.alias)
-    );
     const skillRegistration = await registerSkills(ctx.skill, skills);
     return async () => {
       await skillRegistration.dispose();
-      await hook.dispose();
       await registration.dispose();
     };
   }

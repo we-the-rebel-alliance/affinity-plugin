@@ -1,16 +1,16 @@
 /**
  * The plugin's server entry: one `register` call wires its methods through the contract's doors, and the `accounts`
- * module registers one Affinity MCP server per alias.
+ * module registers one Affinity MCP server per alias. The two skills are read from `skills/<id>/SKILL.md` and
+ * registered through `ctx.skill.transform`.
  *
  * Affinity's MCP tools stay its own: the manifest declares them as `mcp:<tool>` rows and no code here writes a
- * pass-through tool. The plugin's own work is its two reads (`events_list`, `probe`), its `status`, and one tool hook
- * that nudges apps after a write completes.
+ * pass-through tool. The plugin's own work is its two reads (`events_list`, `probe`) and its `status`. It installs no
+ * per-request hook: it makes no write of its own and receives no webhook, so there is no nudge to emit.
  */
 import { Plugin } from "@opencode/plugin"
 import { accountsOf, registerAccounts } from "@we-the-rebel-alliance/plugin-contract/accounts"
 import { assertHost, register } from "@we-the-rebel-alliance/plugin-contract/register"
 import { profileOf, serverConfig } from "./accounts.ts"
-import { registerChangedHook } from "./bus.ts"
 import { createHandlers } from "./handlers/index.ts"
 import { manifest } from "./manifest.ts"
 import { createProvider } from "./provider/index.ts"
@@ -39,15 +39,9 @@ export default Plugin.define({
         profiles: plan.ok ? plan.value.accounts : []
       })
     )
-    const hook = await registerChangedHook(
-      ctx,
-      registration.bus,
-      accounts.accounts.map((account) => account.alias)
-    )
     const skillRegistration = await registerSkills(ctx.skill, skills)
     return async () => {
       await skillRegistration.dispose()
-      await hook.dispose()
       await registration.dispose()
     }
   }

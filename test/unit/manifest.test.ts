@@ -172,7 +172,7 @@ describe("the manifest", () => {
       expect(source.service).toEqual({ id: "affinity.crm", label: "CRM" })
       expect(source.cost).toEqual({ class: "metered", units: [{ per: "call", usd: 0 }] })
       expect(source.maxBytes).toBe(65536)
-      expect(source.signals).toEqual(["bus"])
+      expect(source.signals).toBeUndefined()
       expect(source.private).toBe(true)
       expect(source.scope).toBeUndefined()
       const operations = manifest.methods[source.method]?.operations ?? []
@@ -190,6 +190,6 @@ describe("the manifest", () => {
 
   test("writes nothing as an action: every change is a pass-through vendor tool", () => {
     expect(manifest.actions).toEqual([])
-    expect(manifest.events).toEqual({ changed: {} })
+    expect(manifest.events).toEqual({})
   })
 })

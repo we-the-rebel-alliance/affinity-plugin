@@ -39,10 +39,10 @@ describe("the plugin on OpenCode 2.4.1", () => {
     }
   })
 
-  test("registers the same three methods over RPC, with the changed event", () => {
+  test("registers the same three methods over RPC, with no bus event", () => {
     expect(host.rpc?.id).toBe("affinity")
     expect([...(host.rpc?.methods ?? [])].sort()).toEqual(["events_list", "probe", "status"])
-    expect(host.rpc?.events).toEqual(["changed"])
+    expect(host.rpc?.events).toEqual([])
   })
 
   test("answers status over RPC with a validating answer", async () => {

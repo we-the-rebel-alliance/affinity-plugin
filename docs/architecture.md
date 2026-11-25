@@ -7,13 +7,13 @@ own tools stay Affinity's: the manifest declares them and the plugin writes no p
 
 | File                      | Does                                                                                                             |
 | ------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `src/index.ts`            | `Plugin.define`, `assertHost`, `registerAccounts`, one `register`, one tool hook                                 |
+| `src/index.ts`            | `Plugin.define`, `assertHost`, `loadSkills`, `registerAccounts`, one `register`                                 |
 | `src/manifest.ts`         | reads `../package.json`; the manifest and the installed version                                                  |
 | `src/accounts.ts`         | the profile, the one server name per alias, the MCP server config                                                |
+| `src/skills.ts`           | reads `skills/<id>/SKILL.md`, validates its frontmatter and registers it through `ctx.skill.transform`           |
 | `src/provider/index.ts`   | the only place the endpoint is named; `ctx.tool.list()` and `tool.execute` per alias; the contract's error codes |
 | `src/provider/answers.ts` | Affinity's API v2 field names; the readers for meetings, whoami and companies                                    |
 | `src/handlers/`           | `status`, `events_list`, `probe`, and the one handler table                                                      |
-| `src/bus.ts`              | the one `execute.after` tool hook that emits `changed`                                                           |
 
 `dist/index.js` is committed: OpenCode installs the package as it is, so the bundle ships with the source, and
 `npm run check` rebundles it and fails when the committed file is stale.
@@ -44,6 +44,13 @@ That is the contract's reading (§5, §6): the account an MCP tool runs as is th
 its input. The register refuses a handler for an `mcp:` method, and the vendor owns the tool's input. The plugin's own
 methods take `account` and resolve it through the contract's `accounts` module.
 
+## Skills
+
+`loadSkills()` reads every `skills/<id>/SKILL.md` once at setup. It validates that the frontmatter `name` equals the
+directory, that a description exists and that the body is not empty, then `registerSkills(ctx.skill, skills)` adds each
+valid skill through OpenCode's skill editor. A missing or broken file does not stop the plugin: the problem is passed to
+`status` as `SKILLS_INVALID` with a reinstall next step, and the plugin's tools still work.
+
 ## What is cached
 
 Only one thing: the identity a meetings listing needs. `get_current_user` gives the signed-in person's id, name and
@@ -63,28 +70,18 @@ pair: the id is never turned into a number, because two ids beyond `Number`'s sa
 a tie-breaker that cannot tell them apart repeats one meeting and skips the other at a page boundary. A cursor from
 another alias is `CURSOR_INVALID`, never a silent restart. The snapshot carries no cursor.
 
-## The one tool hook
-
-A pass-through write has no handler this plugin writes, so the only place it can tell apps that something changed is
-the host's `execute.after` tool hook. `src/bus.ts` registers exactly one: when a call **completed**, and its tool id is
-one of this plugin's non-read `mcp:` tools for an alias, it emits `changed` through `registration.bus` — the writer
-`register` builds from its one RPC registration.
-
-The hook **adds no model text**. It returns nothing, never edits the tool's answer and never asks the model anything;
-a turn sees exactly what Affinity's tool said. It is also the plugin's only hook: there is no per-request hook and no
-cost line, because cost lives in `status` and in each source's `cost`.
-
 ## OpenCode APIs used
 
 `ctx.app.version` (the host gate), `ctx.options`, `ctx.mcp.transform` (through `registerAccounts`), `ctx.tool.list()`
-and `tool.execute` (the provider), `ctx.tool.hook("execute.after")` (the nudge), and everything `register` itself wires
+and `tool.execute` (the provider), `ctx.skill.transform` (the two skills), and everything `register` itself wires
 (`ctx.agent.transform`, `ctx.tool.transform`, `ctx.rpc.register`, `ctx.permission.assert`). No internal API is used.
+The plugin installs no `ctx.tool.hook` and declares no bus event: it makes no write of its own and receives no webhook.
 
 ## Tests
 
 | Suite              | Proves                                                                                                                                                                                   |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `test/unit`        | the manifest against the recorded 103-tool list, the provider's names and error codes, the meetings page and its cursor, probe, status, accounts, the bus hook and every refusal's shape |
+| `test/unit`        | the manifest against the recorded 103-tool list, the provider's names and error codes, the meetings page and its cursor, probe, status, accounts, the skills loader and every refusal's shape |
 | `test/conformance` | the real handlers over a fake Affinity transport for `work` and `personal`, recorded into `fixtures/conformance.json`                                                                    |
-| `test/host`        | the built bundle in the real OpenCode 2.4.1 host: id, namespace, tools, RPC, status and the access rules                                                                                 |
+| `test/host`        | the built bundle in the real OpenCode 2.4.1 host: id, namespace, tools, RPC, status, the access rules, and the skills list in an empty project                                           |
 | `test/pack`        | the tarball `npm pack` builds, and that its entry loads                                                                                                                                  |

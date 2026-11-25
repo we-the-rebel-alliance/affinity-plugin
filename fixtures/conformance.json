@@ -695,9 +695,7 @@
     }
   },
   "events": {
-    "emitted": [
-      "changed"
-    ],
+    "emitted": [],
     "status": {
       "name": "affinity",
       "version": "0.0.0",

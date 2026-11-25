@@ -890,9 +890,6 @@
         "cadence": {
           "suggestMinutes": 2
         },
-        "signals": [
-          "bus"
-        ],
         "private": true,
         "cost": {
           "class": "metered",
@@ -925,9 +922,6 @@
         "cadence": {
           "suggestMinutes": 2
         },
-        "signals": [
-          "bus"
-        ],
         "private": true,
         "cost": {
           "class": "metered",
@@ -942,8 +936,6 @@
       }
     ],
     "actions": [],
-    "events": {
-      "changed": {}
-    }
+    "events": {}
   }
 }

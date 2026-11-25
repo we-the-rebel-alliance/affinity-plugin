@@ -1,13 +1,13 @@
 # Automations
 
 `affinity.meetings` is a feed with a cursor, so an OpenCode automation can collect it on a schedule and hand each page
-to whatever consumes it. The plugin never schedules anything itself: OpenCode owns scheduling, and the bus event is only
-a nudge to re-read.
+to whatever consumes it. The plugin never schedules anything itself: OpenCode owns scheduling, and the cursor is the
+truth for what has been read.
 
 <!-- generated:automations -->
 | Source | Method | Provider floor | Suggested | Signals |
 |---|---|---|---|---|
-| `affinity.meetings` | `tools.affinity.events_list` | — | 2 min | `bus` |
+| `affinity.meetings` | `tools.affinity.events_list` | — | 2 min | — |
 <!-- /generated:automations -->
 
 ## Collecting meetings
@@ -40,12 +40,6 @@ fabricating events.
 
 `affinity.companies` is a snapshot, not a feed: read it with `list: "companies"` when a view needs the firm's companies,
 with no cursor. It is one `search_all_companies` call and up to 50 items.
-
-## Reacting to a change
-
-A completed write through one of Affinity's own tools emits `changed` for the alias that ran it. Subscribe to
-`rpc.affinity.changed` on `/api/event` and re-read what you care about; the event carries no content, only
-`{ capability, account, reason }`.
 
 ## What not to do
 
