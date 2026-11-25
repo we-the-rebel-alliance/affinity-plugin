@@ -104,6 +104,38 @@ describe("the meetings page", () => {
     expect(third.more).toBe(false)
   })
 
+  test("never repeats or skips a meeting when two start at the same instant and their ids are beyond number precision", async () => {
+    const start = "2026-11-12T09:00:00Z"
+    const sameStart = (id: string, title: string) => ({
+      id,
+      title,
+      startTime: start,
+      creator: null,
+      organizer: { emailAddress: "pilot.owner@example.com", person: { id: 9001, primaryEmailAddress: "pilot.owner@example.com" } },
+      createdAt: "2026-11-10T09:00:00Z",
+      attendeesPreview: { data: [], totalCount: 0 }
+    })
+    // Two ids a JavaScript number cannot tell apart: Number(id) is the same value for both.
+    const odd = sameStart("9007199254740993", "Odd id")
+    const even = sameStart("9007199254740992", "Even id")
+    expect(Number(odd.id)).toBe(Number(even.id))
+
+    const { handlers } = handlersFor({ meetings: { work: [odd, even], personal: [] } })
+    const first = (await handlers.events_list.run({ since: "2026-11-12T00:00:00Z", limit: 1 }, callOf("work"))) as EventsListResult
+    expect(first.events.map((event) => event.external_id)).toEqual(["9007199254740992"])
+
+    const second = (await handlers.events_list.run({ cursor: first.cursor, limit: 1 }, callOf("work"))) as EventsListResult
+    expect(second.events.map((event) => event.external_id)).toEqual(["9007199254740993"])
+
+    const third = (await handlers.events_list.run({ cursor: second.cursor, limit: 1 }, callOf("work"))) as EventsListResult
+    expect(third.events).toEqual([])
+
+    // Both ids are carried exactly, and two events at one instant keep different hashes.
+    const listed = [...first.events, ...second.events]
+    expect(listed.map((event) => event.external_id).sort()).toEqual(["9007199254740992", "9007199254740993"])
+    expect(new Set(listed.map((event) => event.hash)).size).toBe(2)
+  })
+
   test("refuses another account's cursor as CURSOR_INVALID, never as an empty page", async () => {
     const first = await page({}, { since: "2026-11-01T00:00:00Z", limit: 1 })
     const message = await refusalOf(() => handlersFor().handlers.events_list.run({ cursor: first.cursor }, callOf("personal")))

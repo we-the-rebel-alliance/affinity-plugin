@@ -54,8 +54,11 @@ Nothing else is cached: no meetings, no companies, no tokens, and no status betw
 ## Cursors
 
 A cursor is the contract's bound cursor: `{ plugin: "affinity", source: "affinity", account: <alias> }`, with the
-listing's state inside (its position, its late-feed generation and the spans it has learned). A cursor from another
-alias is `CURSOR_INVALID`, never a silent restart. The snapshot carries no cursor.
+listing's state inside (its position, its late-feed generation and the spans it has learned). Its position is a total
+order over `(start time, Affinity's meeting id as the exact string it sent)`, and a read resumes strictly after that
+pair: the id is never turned into a number, because two ids beyond `Number`'s safe range can collapse to one value, and
+a tie-breaker that cannot tell them apart repeats one meeting and skips the other at a page boundary. A cursor from
+another alias is `CURSOR_INVALID`, never a silent restart. The snapshot carries no cursor.
 
 ## The one tool hook
 

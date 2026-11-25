@@ -82,8 +82,16 @@ const WEEK_MS = 7 * DAY_MS
 const WIDEST_MS = 128 * DAY_MS
 /** The narrowest slice: one second, Affinity's filter precision. */
 const NARROWEST_MS = 1000
-/** A position past every meeting at its start time. */
-const AFTER_ALL = Number.MAX_SAFE_INTEGER
+/**
+ * A position past every meeting at its start time.
+ *
+ * A meeting's tie-breaker is its id as the exact digit string Affinity sent, and the order is the same string comparison
+ * everywhere, so a string starting above `9` sorts after every id. The sentinel is never an id: the reader accepts only
+ * digits, so no meeting can carry it.
+ */
+const AFTER_ALL = "~"
+/** A position before every id at its start time: the empty string sorts before any digit string. */
+const BEFORE_ALL = ""
 /** How long a page's owner and matching address are kept, so a listing costs no identity call every time. */
 export const IDENTITY_TTL_MS = 15 * 60_000
 
@@ -139,16 +147,24 @@ const OUTPUT = { anyOf: [PAGE_SCHEMA, SNAPSHOT_OUTPUT] }
 /** What a cursor is bound to: this plugin, its one source and the account. The snapshot carries no cursor. */
 const bindingOf = (account: string): CursorBinding => ({ plugin: "affinity", source: SOURCE, account })
 
-/** (start, meeting id): the order events are listed in, and each feed's position. */
+/**
+ * (start, meeting id) as a string: the total order events are listed in, and each feed's position.
+ *
+ * The id is the exact string Affinity sent, never a number: two ids beyond `Number`'s safe range can collapse to one
+ * number, and a tie-breaker that cannot tell them apart can repeat one and skip the other at a page boundary.
+ */
 interface Key {
   readonly t: number
-  readonly i: number
+  readonly i: string
 }
 
 type Dated = MeetingFacts & { readonly time: number }
 
-const keyOf = (meeting: Dated): Key => ({ t: meeting.time, i: Number(meeting.id) })
-const compare = (a: Key, b: Key) => a.t - b.t || a.i - b.i
+const keyOf = (meeting: Dated): Key => ({ t: meeting.time, i: meeting.id })
+const compare = (a: Key, b: Key) => {
+  if (a.t !== b.t) return a.t - b.t
+  return a.i < b.i ? -1 : a.i > b.i ? 1 : 0
+}
 
 /** Where a listing stands; the cursor holds all of it. */
 interface State {
@@ -173,8 +189,9 @@ const cursorInvalid = () =>
   )
 
 const whole = (value: unknown): value is number => typeof value === "number" && Number.isSafeInteger(value)
-const pair = (value: unknown): Key | undefined =>
-  Array.isArray(value) && value.length === 2 && whole(value[0]) && whole(value[1]) && value[1] >= 0 ? { t: value[0], i: value[1] } : undefined
+/** Whether a cursor's tie-breaker is one this listing writes: a digit id, or one of its two sentinels. */
+const keyId = (value: unknown): value is string => typeof value === "string" && (value === BEFORE_ALL || value === AFTER_ALL || /^[0-9]+$/.test(value))
+const pair = (value: unknown): Key | undefined => (Array.isArray(value) && value.length === 2 && whole(value[0]) && keyId(value[1]) ? { t: value[0], i: value[1] } : undefined)
 const span = (value: unknown): value is number => whole(value) && value >= NARROWEST_MS && value <= WIDEST_MS
 
 /** The state a cursor holds for `account`; anything that is not this source's bound cursor is CURSOR_INVALID. */
@@ -203,7 +220,15 @@ const encodeState = (account: string, state: State) =>
   })
 
 /** A fresh listing from `start`: no late reach yet, since nothing was listed before it. */
-const fresh = (start: number, now: number): State => ({ pos: { t: start, i: 0 }, g: now, w: now, le: { t: start, i: 0 }, lp: { t: start, i: 0 }, zl: WIDEST_MS, zm: WEEK_MS })
+const fresh = (start: number, now: number): State => ({
+  pos: { t: start, i: BEFORE_ALL },
+  g: now,
+  w: now,
+  le: { t: start, i: BEFORE_ALL },
+  lp: { t: start, i: BEFORE_ALL },
+  zl: WIDEST_MS,
+  zm: WEEK_MS
+})
 
 /** Seconds are as fine as Affinity's filter takes; a slice is widened to whole seconds and narrowed again here. */
 const isoFloor = (time: number) => new Date(Math.floor(time / 1000) * 1000).toISOString().replace(".000Z", "Z")
@@ -320,7 +345,7 @@ async function listEvents(parts: EventsParts, cache: Map<string, CachedIdentity>
     state = { ...given }
     // A finished generation hands over: the next one reaches over the whole read-back, up to the main position, for
     // what was added since the last one started.
-    if (compare(state.lp, state.le) >= 0) state = { ...state, w: state.g, g: now, le: state.pos, lp: { t: horizon, i: 0 } }
+    if (compare(state.lp, state.le) >= 0) state = { ...state, w: state.g, g: now, le: state.pos, lp: { t: horizon, i: BEFORE_ALL } }
   } else {
     const start = startTime(request, now)
     state = fresh(Math.max(start, horizon), now)
