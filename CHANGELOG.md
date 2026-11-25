@@ -1,8 +1,8 @@
 # Changelog
 
-## 0.0.1 (2026-11-25)
+## 0.0.8 (2026-11-25)
 
-The 0.0.1 release on plugin-contract: Affinity for OpenCode, built on [plugin-contract](https://github.com/we-the-rebel-alliance/plugin-contract) v0.0.0.
+The 0.0.8 release on plugin-contract: Affinity for OpenCode, built on [plugin-contract](https://github.com/we-the-rebel-alliance/plugin-contract) v0.0.0.
 
 - Affinity through its hosted MCP server, one server per account alias (`affinity`, `affinity-work`, …), each with its
   own OAuth sign-in and an optional `clientId` per profile for an organisation's own OAuth app.

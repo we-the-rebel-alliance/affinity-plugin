@@ -67,7 +67,7 @@ describe("status", () => {
     expect(STATUS_SCHEMA).toBeDefined()
     expect(answer).toMatchObject({
       name: "affinity",
-      version: "0.0.1",
+      version: "0.0.8",
       host: { version: "2.4.1", range: ">=2.4.1 <2.5.0", tested: ["2.4.1"] },
       state: "ready",
       accounts: [

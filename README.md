@@ -10,11 +10,11 @@ accounts can be signed in at once, one per Affinity organisation or person.
 ## Install
 
 ```sh
-opencode plugin add github:we-the-rebel-alliance/affinity-plugin#v0.0.1
+opencode plugin add github:we-the-rebel-alliance/affinity-plugin#v0.0.8
 ```
 
-`v0.0.1` is this repository's release on plugin-contract, cut from the release pull request. The earlier `v0.0.0`
-tag stays published but predates the YAML skill loader and the host tests, so install `v0.0.1`. Nothing else is
+`v0.0.8` is this repository's release on plugin-contract, cut from the release pull request. The old `v0.0.0`
+through `v0.0.7` tags are from the pre-transfer package and stay published, so install `v0.0.8`. Nothing else is
 needed: there are no runtime dependencies, and the built entry is committed, so the install needs no build step.
 
 ## Sign in
@@ -29,7 +29,7 @@ Several accounts, each signed in on its own:
 {
   "plugins": [
     {
-      "package": "github:we-the-rebel-alliance/affinity-plugin#v0.0.1",
+      "package": "github:we-the-rebel-alliance/affinity-plugin#v0.0.8",
       "options": {
         "accounts": {
           "work": {},
