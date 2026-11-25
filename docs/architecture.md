@@ -1,218 +1,84 @@
 # Architecture
 
-The plugin is a thin layer over Affinity's official MCP server. OpenCode owns the MCP transport, OAuth, credentials,
-permission prompts and tool output limits. The plugin registers the server, names its `/connect` entry, adds default
-permission rules, reports status, ships two skills, lets scripts call the known tools through a tools RPC, and serves
-two sources of the source contract, `affinity.meetings` and the list snapshot `affinity.companies`, through two more
-methods of that RPC. It adds one tool the model sees, `affinity_events_list` (`tools.affinity.events_list` in Code
-Mode), the meetings source's listing. It makes no Affinity call that a model, a script or a source's consumer did not
-ask for, and has no runtime dependencies: the source contract's package is bundled into `dist/index.js`.
+One `register` call wires the plugin's methods through the contract's doors (agent tool, Code Mode and RPC). Affinity's
+own tools stay Affinity's: the manifest declares them and the plugin writes no pass-through tool.
 
-## Layout
+## Layers
 
-| Path | Role |
-| --- | --- |
-| `src/index.ts` | The server part: the plugin `affinity.crm`, pointed at Affinity's server |
-| `src/plugin.ts` | Setup, and server registration or adoption |
-| `src/integration.ts` | The `/connect` entry: its name "Affinity", and the sign-in problem on its account |
-| `src/account.ts` | The account capture: the organisation's name and the grant from a `get_current_user` result, in memory |
-| `src/options.ts` | Option parsing and validation |
-| `src/host-version.ts` | The host check: the supported range, and the tested releases |
-| `src/affinity-tools.ts` | `READ_TOOLS` (with `WORKFLOW_TOOLS`, Affinity's playbooks, among them), `WRITE_TOOLS`, `DENIED_TOOLS`, `PARAMETERS` and `classify()`: every fact the plugin keeps about Affinity's tools. No runtime imports, so `scripts/check-affinity-tools.mjs` (`npm run drift`) can load it. `PARAMETERS` is used by that script and the tests only, and the build leaves it out |
-| `src/permissions.ts` | The default rules, their placement, and detection of agents without them |
-| `src/status.ts` | The status model and text, `/affinity-status`, and the status RPC method |
-| `src/redact.ts` | Redaction for everything status shows: URL credentials, queries and token shapes removed, one line, controls and bidi characters stripped, cut by whole characters |
-| `src/skills.ts` | Loading and registering the skills |
-| `src/tools-rpc.ts` | Affinity's part of the tools RPC for scripts, `affinity.crm.tools`: its method table and its plugin value (next steps, the account read's result shaping, the source's own errors). The transport is the source contract's `tools-rpc` module |
-| `src/events.ts` | The meetings source, `affinity.meetings`, and the list snapshot `affinity.companies`: `events_list` and `probe` as tools RPC methods, and `events_list` also as the `affinity_events_list` tool, on the source contract's `events` and `cursor` modules, with what `probe` read per sign-in |
-| `src/meetings.ts` | The reader of Affinity's meeting answers: `get_meetings` pages and `get_current_user` |
-| `src/companies.ts` | The reader of Affinity's `search_all_companies` page for the list snapshot: id, name and primary domain |
-| `src/tui.ts` | The terminal UI part: the plugin `affinity.crm.tui` and the `/affinity` dialog |
-| `src/constants.ts` | IDs, the server name and URL, the OAuth scope, OpenCode's client URL that Affinity organisations add, the redirect URIs an organisation's own app registers, the Code Mode namespace description, the supported host range, the tested releases (`TESTED_HOSTS`, the one list the checks and status use) and the error shape. No imports, so `scripts/check.mjs` can load it |
-| `src/version.ts` | The plugin's version from `package.json`; the build replaces it with the version string alone |
+| File                      | Does                                                                                                             |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `src/index.ts`            | `Plugin.define`, `assertHost`, `registerAccounts`, one `register`, one tool hook                                 |
+| `src/manifest.ts`         | reads `../package.json`; the manifest and the installed version                                                  |
+| `src/accounts.ts`         | the profile, the one server name per alias, the MCP server config                                                |
+| `src/provider/index.ts`   | the only place the endpoint is named; `ctx.tool.list()` and `tool.execute` per alias; the contract's error codes |
+| `src/provider/answers.ts` | Affinity's API v2 field names; the readers for meetings, whoami and companies                                    |
+| `src/handlers/`           | `status`, `events_list`, `probe`, and the one handler table                                                      |
+| `src/bus.ts`              | the one `execute.after` tool hook that emits `changed`                                                           |
 
-The default rules, the tools RPC's methods, status's unknown tools, the fake server in the tests and the skills all
-derive from `src/affinity-tools.ts`, so a change to Affinity's tools is a change there and in any skill example that
-names a tool.
+## The provider
 
-`scripts/build.mjs` bundles each entry with esbuild into one self-contained file: `src/index.ts` into `dist/index.js`
-and `src/tui.ts` into `dist/tui.js`. Shared code, such as the status model and the RPC contract, is inlined into both.
-The bundles have no chunks and no relative imports, because OpenCode reloads a plugin in place and keeps the modules it
-already loaded for unchanged paths: an entry that imported a sibling module could get an older copy of it. Only
-`@opencode/plugin`, OpenTUI, Solid and `node:` built-ins stay external, because the host provides them. `tsc` only
-typechecks. The package exports `.` (`dist/index.js`) and `./tui` (`dist/tui.js`), and ships no declaration files.
-`dist/index.js` finds the skills at `../skills/` from its own URL, which is the package root's `skills/`.
+The endpoint is `https://mcp.affinity.co/mcp`, named once in `src/provider/index.ts`. A call never builds a tool's name
+by hand: `accountName("affinity", alias)` derives the server (`affinity`, `affinity-work`, …) and `toolAction(server,
+tool)` derives the effective tool id (`affinity-work_get_meetings`), exactly as OpenCode does. The provider looks the
+alias's server up in `ctx.mcp.list()` and refuses fast when it cannot take a call:
 
-## Setup
+| Server state                 | Answer                                       |
+| ---------------------------- | -------------------------------------------- |
+| `connected`                  | the call runs                                |
+| `needs_auth`                 | `NEEDS_SIGN_IN`, naming the alias to sign in |
+| `pending`                    | `UNAVAILABLE`: still connecting, try again   |
+| `failed`, `disabled`, absent | `UNAVAILABLE` with the state and a next step |
 
-1. `parseOptions` validates `allowUntestedHost`, `access` and `clientId` (a UUID; empty counts as unset); anything
-   else fails with `OPTIONS_INVALID`.
-2. `checkHost` compares `ctx.app.version` with `>=2.4.1 <2.5.0`, the same range as `opencode.host` in `package.json`.
-   Inside it the plugin starts, and status calls only 2.4.1 tested. Outside it, setup fails with `HOST_UNTESTED` unless
-   `allowUntestedHost` is set.
-3. The skills are read from the package's `skills/` folder, before the synchronous skill transform needs them.
-4. `ctx.mcp.transform` registers `affinity` at Affinity's URL with `oauth.scope` (and no `client_id` or
-   `redirect_uri`, so OpenCode signs in with its client metadata document; with the `clientId` option, `oauth.client_id`
-   too, so it signs in as the organisation's own app), or adopts the user's own entry at that URL, which then wins over
-   the option, reading only its type, URL and whether `oauth` is `false`. Any other URL, or a local command, is a conflict:
-   nothing is added, and status reports it.
-5. `ctx.tool.transform` gives the `affinity` namespace its Code Mode description and adds `events_list` as a tool in
-   it, with the same input, description and output as the tools RPC method.
-6. `ctx.agent.transform` inserts the default rules after each agent's base `* * allow`.
-7. `watchAccount` adds one `execute.after` hook, which reads the account from `affinity_get_current_user` results, and
-   forgets it on `credential.switched` and when the server is no longer connected.
-8. `ctx.skill.transform`, `ctx.command.transform` (`/affinity-status`) and `ctx.rpc.register` (`affinity.crm/status`).
-9. `registerToolsRpc` (the source contract's) registers the tools RPC, `affinity.crm.tools`, and its `evaluate` hook:
-   every known tool, and the meetings source's `events_list` and `probe`. `events_list` is also the tool added in
-   step 5, so a model, Code Mode and a script reach the same run and the same `affinity_events_list` permission.
-10. `watchIntegration` starts; a `credential.updated` or `credential.switched` also forgets what `probe` read, so the next
-    listing reads who is signed in again. Setup returns one cleanup that stops it, disposes the tools RPC and stops the account
-    capture.
+Affinity's own failure is mapped, one redacted line: a rate limit or the firm's monthly quota is `RATE_LIMITED`, a
+missing scope `SCOPE_MISSING`, a refused permission rule `PERMISSION_DENIED`, anything else `UNAVAILABLE`. A missing or
+unreadable answer is unknown, never zero: `get_meetings` that does not answer a page is `UNAVAILABLE`, not an empty
+page.
 
-Transforms are synchronous and never throw: a failure is kept as a problem for status, and cleared when the next replay
-succeeds.
+## Pass-through tools and the account
 
-## The `/connect` entry
+Every one of Affinity's 103 tools is an explicit `mcp:<tool>` row, with `accounts: "none"` and `operations: ["<tool>"]`.
+That is the contract's reading (§5, §6): the account an MCP tool runs as is the server that carries it, not a field in
+its input. The register refuses a handler for an `mcp:` method, and the vendor owns the tool's input. The plugin's own
+methods take `account` and resolve it through the contract's `accounts` module.
 
-OpenCode gives every remote MCP server with OAuth an integration, which `/connect` lists under MCP. The host registers
-it after plugin setup, named after the server, and registers it again on every MCP reload, after the plugin's
-transforms. So `watchIntegration` checks the server's integration on `integration.updated`, `mcp.status.changed` and
-credential events, and polls for the first ten seconds. When the name is not "Affinity", it registers a rename
-transform again, which then runs after the host's, and disposes the old one.
+## What is cached
 
-While the server is `needs_auth` and the integration has an active account, it reports
-`{ status: "needs_auth" }` on that account with `ctx.integration.connection.status`, so `/connect` shows that a new
-sign-in is required. `connection.active` returns the credential alone, so the plugin reads the status back from
-`integration.get`, which projects it, and clears only its own message once the server is connected again. A user's own
-entry with
-`"oauth": false` has no integration, so there is nothing to name.
+Only one thing: the identity a meetings listing needs. `get_current_user` gives the signed-in person's id, name and
+organisation (for the page's owner) and their address (to keep only their own meetings). That answer is kept per alias
+for 15 minutes, so a two-minute automation does not pay an identity call every time. A stale identity can only
+under-list, never over-list: the filter keeps the meetings the cached address took part in, and the server's own
+sign-in decides what it can see at all. `probe` always reads a fresh answer.
 
-## Status
+Nothing else is cached: no meetings, no companies, no tokens, and no status between calls.
 
-`readStatus` reads the server's state (`ctx.mcp.list()`), the `affinity` server's tools (`ctx.tool.list()`, by the
-namespace `affinity`, leaving out the plugin's own `events_list`), every agent's rules (`ctx.agent.list()`) and the skills OpenCode lists (`ctx.skill.list()`), and takes the
-captured account. `buildStatus` turns them into one model, and `formatStatus` renders it in a fixed order: Connection
-(state and server), Account (the organisation), Access (the grant, and what the default rules let run), Sign-in client
-(the organisation's own app by the `clientId` option's first 8 characters, OpenCode's client URL, or the user's own
-entry, and whether that entry makes the option ignored), Organisation
-setup (whether the organisation lets OpenCode sign in, and for a first sign-in that Affinity may refuse, the admin
-step), Tools
-(counts and up to 20 unknown names), Agents without default rules (names, then the default rules to paste, one rule a
-line), OpenCode (version, tested or not, the supported range, and setup problems), and exactly one Next step,
-"Nothing to do." when nothing is needed. An agent is listed only when it has a base allow, lacks the plugin's whole
-block after it, and its own rules would let a new Affinity tool run without asking. A skill of the plugin's id that
-OpenCode loads from another path is named, with a next step to rename or move it. OpenCode's text for a needed sign-in
-is never shown, and a failure's reason is cut to one line of 160 characters with no URL query.
+## Cursors
 
-- `/affinity-status` posts the text with `ctx.session.synthetic` (`resume: false`).
-- The RPC method returns the model to the terminal UI and to scripts, with the fields every plugin of this family
-  shares (`version`, `host`, `state`, `unguardedAgents`, `nextStep`). Its input and output are JSON Schemas that
-  OpenCode validates. A status it cannot read is its declared error `unavailable`, with a next step. The UI part needs
-  the RPC because it receives no plugin options and cannot see the server part's findings.
+A cursor is the contract's bound cursor: `{ plugin: "affinity", source: "affinity", account: <alias> }`, with the
+listing's state inside (its position, its late-feed generation and the spans it has learned). A cursor from another
+alias is `CURSOR_INVALID`, never a silent restart. The snapshot carries no cursor.
 
-## Tools RPC
+## The one tool hook
 
-`affinity.crm.tools` lets a script call every known tool with no model; [Scripting](scripting.md) is the user's
-view. Its methods are `describe` and one per name in `READ_TOOLS`, `WORKFLOW_TOOLS` (class `send`), `WRITE_TOOLS` and
-`DENIED_TOOLS`, named after the upstream tool, each with its class. A tool that Affinity adds later is never a method.
-The rules are resolved before dispatch: an `ask` or a `deny` is refused with no call, and only an `allow` runs.
-`describe` reports each method's class, and — given a session — its permission, and whether OpenCode lists it now.
+A pass-through write has no handler this plugin writes, so the only place it can tell apps that something changed is
+the host's `execute.after` tool hook. `src/bus.ts` registers exactly one: when a call **completed**, and its tool id is
+one of this plugin's non-read `mcp:` tools for an alias, it emits `changed` through `registration.bus` — the writer
+`register` builds from its one RPC registration.
 
-A call is `{ sessionID, input }`. The module:
+The hook **adds no model text**. It returns nothing, never edits the tool's answer and never asks the model anything;
+a turn sees exactly what Affinity's tool said. It is also the plugin's only hook: there is no per-request hook and no
+cost line, because cost lives in `status` and in each source's `cost`.
 
-1. looks up the session with `ctx.session.get`, and its agent's rules with `ctx.agent.get` in the session's location
-   (`SESSION_UNKNOWN`, `SESSION_AGENT_REQUIRED`);
-2. refuses the tool when the last rule that matches `affinity_<tool>` on `*`, in the agent's rules followed by the
-   session's, is a deny: OpenCode hides such a tool from the model (`PERMISSION_DENIED`);
-3. refuses with `SERVER_CONFLICT` while `affinity` is a user server at another URL; an adopted server is the plugin's;
-4. finds the tool's executor in `ctx.tool.list()`, or names the server's connection state (`AUTH_REQUIRED` and so on)
-   or `TOOL_UNAVAILABLE`;
-5. calls `execute(input, { sessionID, agent, messageID, id, signal, progress })` with a new call id. OpenCode's
-   executor checks `affinity_<tool>` on `*` itself, with the agent's rules, the session's rules and saved approvals,
-   and sends OpenCode's own credential;
-6. returns `{ output?, text }`: the executor's output (the tool's structured content, or OpenCode's copy of its text
-   when it has none) and the tool's text parts.
+## OpenCode APIs used
 
-While a call runs, its id is live. A `permission.hook("evaluate")` turns an `ask` whose source id is live into a deny,
-so the script gets `PERMISSION_DENIED` at once and no prompt waits. It changes nothing else; this is the plugin's only
-permission hook, and the forbidden scan allows exactly this one.
+`ctx.app.version` (the host gate), `ctx.options`, `ctx.mcp.transform` (through `registerAccounts`), `ctx.tool.list()`
+and `tool.execute` (the provider), `ctx.tool.hook("execute.after")` (the nudge), and everything `register` itself wires
+(`ctx.agent.transform`, `ctx.tool.transform`, `ctx.rpc.register`, `ctx.permission.assert`). No internal API is used.
 
-A `Tool.Error` with a cause is a permission refusal; one without a cause is Affinity's own error (`isError`), which
-becomes `UPSTREAM_ERROR` with its first line, at most 300 characters, with tokens and URL queries removed. Any other
-failure is OpenCode's own and passes through.
+## Tests
 
-OpenCode decodes a plain JSON Schema input with Effect, which drops unknown keys of an object that has properties
-instead of refusing them. So the envelope's schema carries a strict Standard Schema validator as a non-enumerable
-`~standard` property, which OpenCode prefers. The contract still reads and serialises as plain JSON Schema, and
-OpenCode answers a bad envelope with `rpc.invalid_input`.
-
-The executor does not run `execute.before` and `execute.after` hooks, so the module's `shapeResult` does what the
-account hook does: a `get_current_user` result records the account. Results are otherwise unchanged.
-
-## Terminal UI part
-
-`src/tui.ts` uses no JSX, because OpenTUI's JSX transform skips `node_modules`. One global keymap layer provides
-"Affinity: Status" (palette and `/affinity`) and the `r` key, which is enabled only while the dialog is open. The
-dialog is a `ui.dialog.alert`, which closes on `Esc`. It listens to events only while it is open, and refreshes on
-`mcp.status.changed` for `affinity`, `server.connected`, `agent.updated`, `integration.updated`, `credential.updated`
-and `credential.switched`. The newest answer wins, and a refresh never reopens a closed dialog.
-
-## Platform facts
-
-These facts were checked on OpenCode 2.4.1, the one supported and tested release. Links point to the source at tag
-`v2.4.1`. The host harness waits for the plugin to become active before its first RPC, because 2.4 loads plugins in the
-background, and the fake MCP server answers OpenCode 2.4's `server/discover` probe before any `initialize`.
-
-| Topic | Fact | Source |
-| --- | --- | --- |
-| MCP tool permissions | The host asserts every MCP call: action `<server>_<tool>`, resource `*`. A last-matching `deny` on `*` hides the tool. | [`tool/mcp.ts`](https://github.com/anomalyco/opencode/blob/v2.4.1/packages/core/src/tool/mcp.ts) |
-| Rule evaluation | The last match wins. Saved approvals come after all rules as `allow`. An unattended `ask` is refused. | [`permission.ts`](https://github.com/anomalyco/opencode/blob/v2.4.1/packages/core/src/permission.ts) |
-| Agent rule order | Built-in agents start from a base `* * allow` and exist before package plugins run. User `permissions`, and agents defined only in user config, come after. | [`config/plugin/agent.ts`](https://github.com/anomalyco/opencode/blob/v2.4.1/packages/core/src/config/plugin/agent.ts) |
-| User MCP config | `mcp.servers` is applied before package plugins. A later plugin `set` would replace the user's entry. | [`config/plugin/mcp.ts`](https://github.com/anomalyco/opencode/blob/v2.4.1/packages/core/src/config/plugin/mcp.ts) |
-| MCP integrations | Integration ID `mcp_` + the first 16 hex digits of sha1(`<name>\0<url>`), so credentials are kept per name and URL. | [`mcp/index.ts`](https://github.com/anomalyco/opencode/blob/v2.4.1/packages/core/src/mcp/index.ts) |
-| Code Mode | MCP tools are in Code Mode by default (`tools.affinity.<tool>`). A declined prompt is an error the program can catch. | [`codemode/tool.ts`](https://github.com/anomalyco/opencode/blob/v2.4.1/packages/core/src/codemode/tool.ts) |
-| Dialog close paths | A plugin's `ui.dialog.alert` resolves on its dialog's `onClose`. Opening another dialog (`replace`), `clear` (also a click outside), Escape and Ctrl+C all call `onClose` for each dialog they remove, so the `/affinity` dialog's `r` key and listeners stop on every path. | The pack test reads each stock release's terminal UI code for this |
-| A refused sign-in | OpenCode signs in with its client metadata document only when the server entry sets no `oauth.client_id` or `oauth.redirect_uri`, and the authorization server says it supports one. If Affinity refuses the client and shows its own error page, nothing returns to OpenCode's loopback callback, and the `/connect` attempt waits until it expires after ten minutes. If the authorization server redirects back with an `error`, the attempt fails with that text. Either way no credential is stored, the server stays `needs_auth`, and no event reaches plugins, so status can't tell a refused client from a sign-in not yet made. The host test reproduces both with a fake authorization server on 2.4.1. | [`mcp/oauth.ts`](https://github.com/anomalyco/opencode/blob/v2.4.1/packages/core/src/mcp/oauth.ts) |
-| Sign-in scope | OpenCode asks for `oauth.scope ?? challenge.scope`. The plugin pins the scope, so an organisation's `api`/`api.read` never reaches the consent screen, and `offline_access` stays even if the challenge changes. The fake advertises more than the pin, and the DR-1 host cases fail if the pin is removed: one through the challenge, one on a server that answers without a challenge. | [`mcp/oauth.ts`](https://github.com/anomalyco/opencode/blob/v2.4.1/packages/core/src/mcp/oauth.ts) |
-| Credential status | A status set with `integration.connection.status` is not on what `connection.active` returns; `integration.get` projects it as `connections[].status`. A 401 whose token refresh fails with no refresh token leaves the credential in place, so the `/connect` mark is only observable then. The host test signs in through the loopback callback and the token endpoint, then challenges, and asserts the mark is set and cleared. | The host test, on 2.4.1 |
-| UI part options | The UI part of a plugin listed in `opencode.json` gets no plugin options. | Observed on stock 2.4.1 |
-| Tool executors | `ctx.tool.list()` returns each MCP tool with a callable `execute`, which checks `<server>_<tool>` with the agent's and the session's rules and saved approvals, and gives the `evaluate` hook the call's `source`. A deny is a `Tool.Error` with a cause; the server's `isError` is one without. `execute.before` and `execute.after` hooks do not run for it. Not documented as an entry point: the package test checks it on stock 2.4.1. | [`tool/mcp.ts`](https://github.com/anomalyco/opencode/blob/v2.4.1/packages/core/src/tool/mcp.ts) |
-| RPC input | An RPC input given as a Standard Schema is validated with it; a plain JSON Schema is decoded with Effect, which drops unknown keys of an object that has properties. The package test checks the envelope on stock 2.4.1. | `@opencode/core` 2.4.1, the RPC service's `parse` |
-
-## The meetings source
-
-`package.json`'s top-level `sources` declares `affinity.meetings` and the list snapshot `affinity.companies` (contract version 1, the RPC `affinity.crm.tools`,
-the probe action `affinity_probe`). `probe` makes one `get_current_user` call, answers the account
-`<organisation id>/<email>` and its owner, and records them under OpenCode's credential for the server. `events_list`
-checks the account it is asked for against that record before any read of its own. When the record is missing (after
-a restart, which keeps nothing, or a new sign-in), it makes the same one `get_current_user` call itself, the source's
-declared identity operation, and records the answer; it never depends on a `probe` in the same process, because Memory
-probes only at bind. A failed read records nothing and fails the listing with its own code.
-
-Affinity lists every meeting the person may see and promises no order within a page, so a listing reads a slice of
-start times whole (every page of one filter), sorts it, and keeps the meetings whose organiser, creator or previewed
-attendees include the signed-in email. Two feeds share the cursor:
-
-- the main feed lists the meetings that started after its position, oldest first;
-- the late feed lists meetings added to Affinity after an earlier listing passed their start. Listings run in
-  generations: a generation starts at a listing's clock G and owns the meetings added in [previous G − 10 minutes,
-  G − 10 minutes), over the whole read-back up to the main position when it started. Each meeting belongs to exactly one
-  generation, so it is listed once, and the margin absorbs Affinity's index lag and clock skew. A main-feed meeting added
-  within the current generation's margin is left to the next generation.
-
-A listing makes at most `MAX_CALLS` (10) calls. A slice that takes more than `ATTEMPT_PAGES` (5) pages is read again at
-half its span; a slice read in at most two pages lets the next one double. Both spans live in the cursor, so a
-backfill drains over several listings at a bounded cost each, and a listing whose budget runs out ends with what it
-listed, `more: true`, and its progress. While both spans are at their widest, the late feed's whole reach and the main
-feed's slice share one filter (`(… & createdAt>=…) | (…)`): a normal listing is one call. Only a second in which more
-than 1,000 visible meetings start cannot be read whole, and is `UNAVAILABLE`.
-
-The cursor, bound to the plugin, the source and the account by the contract's `cursor` module, holds the main
-position, the generation (G, the previous G, its reach's end and progress) and the two spans. The source reads back 90
-days, by choice, and answers `gap` (`window-truncated` for an older `since`, `expired` for a cursor more than 100 days
-old) once, on the page where it restarts. A meeting deleted before a listing reaches it is never listed, and no gap
-says so.
-
-`npm run conformance` (`scripts/conformance.ts`) runs the contract's kit over both methods against a fake Affinity
-(`test/support/conformance.ts`, answering from `test/fixtures/conformance.json`) and writes
-`reports/conformance-report.json`, which the release kit attaches.
+| Suite              | Proves                                                                                                                                                                                   |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `test/unit`        | the manifest against the recorded 103-tool list, the provider's names and error codes, the meetings page and its cursor, probe, status, accounts, the bus hook and every refusal's shape |
+| `test/conformance` | the real handlers over a fake Affinity transport for `work` and `personal`, recorded into `fixtures/conformance.json`                                                                    |
+| `test/host`        | the built bundle in the real OpenCode 2.4.1 host: id, namespace, tools, RPC, status and the access rules                                                                                 |
+| `test/pack`        | the tarball `npm pack` builds, and that its entry loads                                                                                                                                  |

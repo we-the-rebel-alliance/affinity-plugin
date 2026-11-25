@@ -1,113 +1,890 @@
 {
   "name": "@we-the-rebel-alliance/affinity-plugin",
   "version": "0.0.0",
-  "private": true,
-  "description": "Unofficial OpenCode plugin for Affinity CRM: read and change your firm's companies, people, deals, notes and meetings.",
+  "type": "module",
+  "description": "Affinity CRM for OpenCode: read the firm's companies, people, deals, lists, notes and meetings, and change them through Affinity's own MCP tools.",
   "keywords": [
     "opencode",
     "opencode-plugin",
+    "plugin-contract",
     "affinity"
   ],
   "license": "MIT",
-  "type": "module",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/we-the-rebel-alliance/affinity-plugin.git"
-  },
-  "homepage": "https://github.com/we-the-rebel-alliance/affinity-plugin#readme",
-  "bugs": {
-    "url": "https://github.com/we-the-rebel-alliance/affinity-plugin/issues"
-  },
+  "repository": "github:we-the-rebel-alliance/affinity-plugin",
   "exports": {
-    ".": "./dist/index.js",
-    "./tui": "./dist/tui.js",
-    "./icon.svg": "./assets/icon.svg",
-    "./icon-128.png": "./assets/icon-128.png",
-    "./icon-256.png": "./assets/icon-256.png"
+    "./server": "./dist/index.js"
   },
   "files": [
     "dist",
-    "assets/icon.svg",
-    "assets/icon-128.png",
-    "assets/icon-256.png",
     "skills",
+    "assets",
     "README.md",
-    "LICENSE",
-    "CHANGELOG.md"
+    "LICENSE"
   ],
-  "opencode": {
-    "host": ">=2.4.1 <2.5.0",
-    "icons": [
-      {
-        "src": "assets/icon.svg",
-        "mimeType": "image/svg+xml",
-        "sizes": [
-          "any"
-        ]
+  "scripts": {
+    "check": "npm run lint && npm run typecheck && npm run build && npm run test && npm run conformance && npm run test:pack",
+    "lint": "biome check .",
+    "typecheck": "tsc --noEmit",
+    "build": "esbuild src/index.ts --bundle --platform=node --format=esm --target=node22 --outfile=dist/index.js --external:'@opencode/*'",
+    "test": "vitest run",
+    "conformance": "plugin-kit check",
+    "test:pack": "node test/pack/pack.mjs"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.6.9",
+    "@opencode/client": "2.4.1",
+    "@opencode/plugin": "2.4.1",
+    "@opencode/sdk": "2.4.1",
+    "@types/node": "24.19.2",
+    "@we-the-rebel-alliance/plugin-contract": "github:we-the-rebel-alliance/plugin-contract#v0.0.0",
+    "esbuild": "0.28.2",
+    "typescript": "5.9.3",
+    "vitest": "5.1.1"
+  },
+  "capabilities": {
+    "version": 1,
+    "plugin": {
+      "name": "affinity",
+      "title": "Affinity",
+      "summary": "Affinity CRM: the firm's companies, people, deals, lists, notes and meetings, read through Affinity's MCP server and its own tools. Pass account for each alias. send_feedback is offered only when the user asks. Writes reach the firm's shared CRM and share its monthly API quota.",
+      "vendor": {
+        "id": "affinity",
+        "name": "Affinity",
+        "domain": "affinity.co"
       },
-      {
-        "src": "assets/icon-128.png",
-        "mimeType": "image/png",
-        "sizes": [
-          "128x128"
-        ]
-      },
-      {
-        "src": "assets/icon-256.png",
-        "mimeType": "image/png",
-        "sizes": [
-          "256x256"
+      "icons": [
+        {
+          "src": "assets/icon.svg",
+          "type": "image/svg+xml"
+        },
+        {
+          "src": "assets/icon-128.png",
+          "type": "image/png"
+        },
+        {
+          "src": "assets/icon-256.png",
+          "type": "image/png"
+        }
+      ],
+      "host": {
+        "opencode": ">=2.4.1 <2.5.0",
+        "tested": [
+          "2.4.1"
         ]
       }
-    ],
-    "vendor": {
-      "id": "affinity",
-      "name": "Affinity",
-      "domain": "affinity.co",
-      "mark": true
-    }
-  },
-  "scripts": {
-    "check": "node scripts/check.mjs",
-    "typecheck": "node scripts/check.mjs typecheck",
-    "build": "node scripts/check.mjs build",
-    "test": "node scripts/check.mjs unit",
-    "test:host": "node scripts/check.mjs host",
-    "test:pack": "node scripts/check.mjs pack",
-    "lint": "node scripts/check.mjs forbidden",
-    "drift": "node scripts/check-affinity-tools.mjs",
-    "release:check": "node scripts/release-check.mjs",
-    "capture": "node scripts/capture-tools.mjs",
-    "conformance": "node scripts/check.mjs conformance"
-  },
-  "sources": {
-    "contractVersion": 1,
-    "rpc": "affinity.crm.tools",
-    "probe": {
-      "action": "affinity_probe"
     },
-    "items": [
+    "accounts": {
+      "via": "mcp",
+      "profile": {
+        "$ref": "#/options/properties/accounts/additionalProperties"
+      },
+      "owner": "affinity"
+    },
+    "options": {
+      "type": "object",
+      "properties": {
+        "access": {
+          "type": "string",
+          "enum": [
+            "all",
+            "ask-changes",
+            "read-only"
+          ],
+          "default": "all",
+          "title": "Access",
+          "description": "How much the plugin's methods may do: all runs every method, ask-changes asks before a change, read-only runs reads only."
+        },
+        "accounts": {
+          "type": "object",
+          "title": "Accounts",
+          "description": "One profile per account alias, such as work or personal. Each alias signs in to its own Affinity MCP server, affinity or affinity-<alias>.",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "clientId": {
+                "type": "string",
+                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+                "description": "Optional: the client ID of your organisation's own Public OAuth app in Affinity, a UUID. Without it, the sign-in uses OpenCode's own client metadata and the server sets no client id."
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "allowUntestedHost": {
+          "type": "boolean",
+          "default": false,
+          "title": "Allow an untested host",
+          "description": "Start on an OpenCode release outside the tested range instead of refusing with HOST_UNTESTED."
+        }
+      },
+      "additionalProperties": false
+    },
+    "methods": {
+      "status": {
+        "class": "read",
+        "accounts": "none"
+      },
+      "events_list": {
+        "class": "read",
+        "accounts": "optional",
+        "operations": [
+          "get_current_user",
+          "get_meetings",
+          "search_all_companies"
+        ]
+      },
+      "probe": {
+        "class": "read",
+        "accounts": "optional",
+        "operations": [
+          "get_current_user"
+        ]
+      },
+      "mcp:get_current_user": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "get_current_user"
+        ]
+      },
+      "mcp:search_companies_top_matches": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "search_companies_top_matches"
+        ]
+      },
+      "mcp:search_all_companies": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "search_all_companies"
+        ]
+      },
+      "mcp:get_company_info": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "get_company_info"
+        ]
+      },
+      "mcp:get_company_list_entries": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "get_company_list_entries"
+        ]
+      },
+      "mcp:get_merge_task": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "get_merge_task"
+        ]
+      },
+      "mcp:render_market_map": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "render_market_map"
+        ]
+      },
+      "mcp:get_entity_fields": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "get_entity_fields"
+        ]
+      },
+      "mcp:get_list_fields": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "get_list_fields"
+        ]
+      },
+      "mcp:get_list_field_dropdown_options": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "get_list_field_dropdown_options"
+        ]
+      },
+      "mcp:get_entity_field_dropdown_options": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "get_entity_field_dropdown_options"
+        ]
+      },
+      "mcp:get_field_value_changes": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "get_field_value_changes"
+        ]
+      },
+      "mcp:get_investor_executive_connections": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "get_investor_executive_connections"
+        ]
+      },
+      "mcp:get_coworker_connections": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "get_coworker_connections"
+        ]
+      },
+      "mcp:get_lists": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "get_lists"
+        ]
+      },
+      "mcp:get_single_list_entry": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "get_single_list_entry"
+        ]
+      },
+      "mcp:get_list_info": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "get_list_info"
+        ]
+      },
+      "mcp:search_list_entries": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "search_list_entries"
+        ]
+      },
+      "mcp:get_meetings": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "get_meetings"
+        ]
+      },
+      "mcp:get_meetings_for_entity": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "get_meetings_for_entity"
+        ]
+      },
+      "mcp:query_notes": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "query_notes"
+        ]
+      },
+      "mcp:get_notes_for_entity": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "get_notes_for_entity"
+        ]
+      },
+      "mcp:get_entities_attached_to_note": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "get_entities_attached_to_note"
+        ]
+      },
+      "mcp:search_notes": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "search_notes"
+        ]
+      },
+      "mcp:get_entity_files": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "get_entity_files"
+        ]
+      },
+      "mcp:get_entity_file_metadata": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "get_entity_file_metadata"
+        ]
+      },
+      "mcp:search_files": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "search_files"
+        ]
+      },
+      "mcp:search_opportunities": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "search_opportunities"
+        ]
+      },
+      "mcp:search_persons": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "search_persons"
+        ]
+      },
+      "mcp:get_person_info": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "get_person_info"
+        ]
+      },
+      "mcp:get_persons_info": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "get_persons_info"
+        ]
+      },
+      "mcp:get_person_list_entries": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "get_person_list_entries"
+        ]
+      },
+      "mcp:get_person_relationships": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "get_person_relationships"
+        ]
+      },
+      "mcp:get_company_relationships": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "get_company_relationships"
+        ]
+      },
+      "mcp:get_reminders": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "get_reminders"
+        ]
+      },
+      "mcp:get_saved_views": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "get_saved_views"
+        ]
+      },
+      "mcp:get_saved_view_list_entries": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "get_saved_view_list_entries"
+        ]
+      },
+      "mcp:get_transcript_fragments": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "get_transcript_fragments"
+        ]
+      },
+      "mcp:get_users": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "get_users"
+        ]
+      },
+      "mcp:render_warm_intro_graph": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "render_warm_intro_graph"
+        ]
+      },
+      "mcp:create_company": {
+        "class": "write",
+        "accounts": "none",
+        "operations": [
+          "create_company"
+        ]
+      },
+      "mcp:send_feedback": {
+        "class": "send",
+        "accounts": "none",
+        "operations": [
+          "send_feedback"
+        ]
+      },
+      "mcp:create_field": {
+        "class": "write",
+        "accounts": "none",
+        "operations": [
+          "create_field"
+        ]
+      },
+      "mcp:create_list_field_dropdown_option": {
+        "class": "write",
+        "accounts": "none",
+        "operations": [
+          "create_list_field_dropdown_option"
+        ]
+      },
+      "mcp:create_interaction": {
+        "class": "write",
+        "accounts": "none",
+        "operations": [
+          "create_interaction"
+        ]
+      },
+      "mcp:create_list": {
+        "class": "share",
+        "accounts": "none",
+        "operations": [
+          "create_list"
+        ]
+      },
+      "mcp:create_list_entry": {
+        "class": "write",
+        "accounts": "none",
+        "operations": [
+          "create_list_entry"
+        ]
+      },
+      "mcp:create_note": {
+        "class": "write",
+        "accounts": "none",
+        "operations": [
+          "create_note"
+        ]
+      },
+      "mcp:create_opportunity": {
+        "class": "write",
+        "accounts": "none",
+        "operations": [
+          "create_opportunity"
+        ]
+      },
+      "mcp:create_person": {
+        "class": "write",
+        "accounts": "none",
+        "operations": [
+          "create_person"
+        ]
+      },
+      "mcp:create_reminder": {
+        "class": "write",
+        "accounts": "none",
+        "operations": [
+          "create_reminder"
+        ]
+      },
+      "mcp:update_company": {
+        "class": "write",
+        "accounts": "none",
+        "operations": [
+          "update_company"
+        ]
+      },
+      "mcp:delete_company": {
+        "class": "delete",
+        "accounts": "none",
+        "operations": [
+          "delete_company"
+        ]
+      },
+      "mcp:merge_companies": {
+        "class": "delete",
+        "accounts": "none",
+        "operations": [
+          "merge_companies"
+        ]
+      },
+      "mcp:update_list_field_dropdown_option": {
+        "class": "write",
+        "accounts": "none",
+        "operations": [
+          "update_list_field_dropdown_option"
+        ]
+      },
+      "mcp:delete_list_field_dropdown_option": {
+        "class": "delete",
+        "accounts": "none",
+        "operations": [
+          "delete_list_field_dropdown_option"
+        ]
+      },
+      "mcp:delete_list_entries": {
+        "class": "delete",
+        "accounts": "none",
+        "operations": [
+          "delete_list_entries"
+        ]
+      },
+      "mcp:upsert_entity_field_values": {
+        "class": "write",
+        "accounts": "none",
+        "operations": [
+          "upsert_entity_field_values"
+        ]
+      },
+      "mcp:upsert_list_entry_field_values": {
+        "class": "write",
+        "accounts": "none",
+        "operations": [
+          "upsert_list_entry_field_values"
+        ]
+      },
+      "mcp:update_note": {
+        "class": "write",
+        "accounts": "none",
+        "operations": [
+          "update_note"
+        ]
+      },
+      "mcp:delete_note": {
+        "class": "delete",
+        "accounts": "none",
+        "operations": [
+          "delete_note"
+        ]
+      },
+      "mcp:update_opportunity": {
+        "class": "write",
+        "accounts": "none",
+        "operations": [
+          "update_opportunity"
+        ]
+      },
+      "mcp:delete_opportunity": {
+        "class": "delete",
+        "accounts": "none",
+        "operations": [
+          "delete_opportunity"
+        ]
+      },
+      "mcp:update_person": {
+        "class": "write",
+        "accounts": "none",
+        "operations": [
+          "update_person"
+        ]
+      },
+      "mcp:delete_person": {
+        "class": "delete",
+        "accounts": "none",
+        "operations": [
+          "delete_person"
+        ]
+      },
+      "mcp:merge_persons": {
+        "class": "delete",
+        "accounts": "none",
+        "operations": [
+          "merge_persons"
+        ]
+      },
+      "mcp:update_reminder": {
+        "class": "write",
+        "accounts": "none",
+        "operations": [
+          "update_reminder"
+        ]
+      },
+      "mcp:delete_reminder": {
+        "class": "delete",
+        "accounts": "none",
+        "operations": [
+          "delete_reminder"
+        ]
+      },
+      "mcp:issue_entity_files_upload_token": {
+        "class": "write",
+        "accounts": "none",
+        "operations": [
+          "issue_entity_files_upload_token"
+        ]
+      },
+      "mcp:issue_entity_files_download_token": {
+        "class": "export",
+        "accounts": "none",
+        "operations": [
+          "issue_entity_files_download_token"
+        ]
+      },
+      "mcp:affinity_data_migration": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "affinity_data_migration"
+        ]
+      },
+      "mcp:affinity_event_setup": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "affinity_event_setup"
+        ]
+      },
+      "mcp:affinity_lp_pipeline_brief": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "affinity_lp_pipeline_brief"
+        ]
+      },
+      "mcp:affinity_meeting_prep": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "affinity_meeting_prep"
+        ]
+      },
+      "mcp:affinity_missed_deal_review": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "affinity_missed_deal_review"
+        ]
+      },
+      "mcp:affinity_reference_check": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "affinity_reference_check"
+        ]
+      },
+      "mcp:company_signals": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "company_signals"
+        ]
+      },
+      "mcp:crm_audit": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "crm_audit"
+        ]
+      },
+      "mcp:customer_ready_to_raise": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "customer_ready_to_raise"
+        ]
+      },
+      "mcp:market_map_generator": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "market_map_generator"
+        ]
+      },
+      "mcp:portfolio_attention_score": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "portfolio_attention_score"
+        ]
+      },
+      "mcp:warm_intro": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "warm_intro"
+        ]
+      },
+      "mcp:get_calls": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "get_calls"
+        ]
+      },
+      "mcp:get_chat_messages": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "get_chat_messages"
+        ]
+      },
+      "mcp:get_emails": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "get_emails"
+        ]
+      },
+      "mcp:get_interactions_for_entity": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "get_interactions_for_entity"
+        ]
+      },
+      "mcp:get_intro_paths": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "get_intro_paths"
+        ]
+      },
+      "mcp:render_intro_paths_graph": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "render_intro_paths_graph"
+        ]
+      },
+      "mcp:get_opportunities_info": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "get_opportunities_info"
+        ]
+      },
+      "mcp:get_suggested_field_updates": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "get_suggested_field_updates"
+        ]
+      },
+      "mcp:get_suggested_field_updates_task": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "get_suggested_field_updates_task"
+        ]
+      },
+      "mcp:list_suggested_field_updates": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "list_suggested_field_updates"
+        ]
+      },
+      "mcp:list_suggested_field_updates_tasks": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "list_suggested_field_updates_tasks"
+        ]
+      },
+      "mcp:data_quality_audit": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "data_quality_audit"
+        ]
+      },
+      "mcp:founder_references": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "founder_references"
+        ]
+      },
+      "mcp:passed_deal_review": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "passed_deal_review"
+        ]
+      },
+      "mcp:portfolio_check_in": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "portfolio_check_in"
+        ]
+      },
+      "mcp:ready_to_raise_indicator": {
+        "class": "read",
+        "accounts": "none",
+        "operations": [
+          "ready_to_raise_indicator"
+        ]
+      },
+      "mcp:update_field": {
+        "class": "write",
+        "accounts": "none",
+        "operations": [
+          "update_field"
+        ]
+      },
+      "mcp:apply_suggested_field_updates": {
+        "class": "write",
+        "accounts": "none",
+        "operations": [
+          "apply_suggested_field_updates"
+        ]
+      },
+      "mcp:dismiss_suggested_field_updates": {
+        "class": "write",
+        "accounts": "none",
+        "operations": [
+          "dismiss_suggested_field_updates"
+        ]
+      },
+      "mcp:suggest_field_updates": {
+        "class": "write",
+        "accounts": "none",
+        "operations": [
+          "suggest_field_updates"
+        ]
+      },
+      "mcp:delete_field": {
+        "class": "delete",
+        "accounts": "none",
+        "operations": [
+          "delete_field"
+        ]
+      }
+    },
+    "sources": [
       {
         "id": "affinity.meetings",
         "kind": "events",
         "reads": "meeting",
-        "tool": "events_list",
+        "method": "events_list",
         "input": {
           "source": "affinity"
         },
-        "accounts": {
-          "named": true
+        "service": {
+          "id": "affinity.crm",
+          "label": "CRM"
         },
-        "permission": {
-          "events": "affinity_events_list",
-          "operations": [
-            "get_current_user",
-            "get_meetings"
-          ],
-          "identity": [
-            "get_current_user"
-          ]
+        "operations": [
+          "get_current_user",
+          "get_meetings"
+        ],
+        "cadence": {
+          "suggestMinutes": 2
         },
+        "signals": [
+          "bus"
+        ],
         "private": true,
         "cost": {
           "class": "metered",
@@ -116,36 +893,33 @@
               "per": "call",
               "usd": 0
             }
-          ],
-          "probe": {
-            "per": "call",
-            "usd": 0
-          }
+          ]
         },
         "maxBytes": 65536
       },
       {
         "id": "affinity.companies",
         "kind": "snapshot",
-        "tool": "events_list",
+        "output": "list",
+        "method": "events_list",
         "input": {
           "source": "affinity",
           "list": "companies"
         },
-        "output": "list",
-        "accounts": {
-          "named": true
+        "service": {
+          "id": "affinity.crm",
+          "label": "CRM"
         },
-        "permission": {
-          "tool": "affinity_events_list",
-          "operations": [
-            "get_current_user",
-            "search_all_companies"
-          ],
-          "identity": [
-            "get_current_user"
-          ]
+        "operations": [
+          "get_current_user",
+          "search_all_companies"
+        ],
+        "cadence": {
+          "suggestMinutes": 2
         },
+        "signals": [
+          "bus"
+        ],
         "private": true,
         "cost": {
           "class": "metered",
@@ -154,704 +928,14 @@
               "per": "call",
               "usd": 0
             }
-          ],
-          "probe": {
-            "per": "call",
-            "usd": 0
-          }
+          ]
         },
-        "maxAgeSec": 900,
         "maxBytes": 65536
       }
-    ]
-  },
-  "devDependencies": {
-    "@opencode/client": "2.4.1",
-    "@opencode/plugin": "2.4.1",
-    "@opencode/sdk": "2.4.1",
-    "@opentui/core": "0.8.0",
-    "@opentui/solid": "0.8.0",
-    "@types/bun": "1.4.4",
-    "@types/node": "24.19.2",
-    "@we-the-rebel-alliance/source-contract": "github:we-the-rebel-alliance/source-contract#2fd55cdc0c6c1067927fefc403a88bfd18c9a971",
-    "esbuild": "0.28.2",
-    "solid-js": "1.9.17",
-    "typescript": "5.9.3"
-  },
-  "jelly": {
-    "title": "Affinity",
-    "summary": "Your firm's Affinity CRM: companies, people, deals, notes and relationships.",
-    "icon": "assets/icon.svg",
-    "admin": "add an app in Affinity (Settings > Manage Apps): Client URL (CIMD) https://opencode.ai/oauth/opencode/client.json, or a Public OAuth app for the Client ID setting; scopes mcp, mcp.read, offline_access",
-    "tools": [
-      {
-        "name": "affinity.get_current_user",
-        "permission": "affinity_get_current_user",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.search_companies_top_matches",
-        "permission": "affinity_search_companies_top_matches",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.search_all_companies",
-        "permission": "affinity_search_all_companies",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.get_company_info",
-        "permission": "affinity_get_company_info",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.get_company_list_entries",
-        "permission": "affinity_get_company_list_entries",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.get_merge_task",
-        "permission": "affinity_get_merge_task",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.render_market_map",
-        "permission": "affinity_render_market_map",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.get_entity_fields",
-        "permission": "affinity_get_entity_fields",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.get_list_fields",
-        "permission": "affinity_get_list_fields",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.get_list_field_dropdown_options",
-        "permission": "affinity_get_list_field_dropdown_options",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.get_entity_field_dropdown_options",
-        "permission": "affinity_get_entity_field_dropdown_options",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.get_field_value_changes",
-        "permission": "affinity_get_field_value_changes",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.get_investor_executive_connections",
-        "permission": "affinity_get_investor_executive_connections",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.get_coworker_connections",
-        "permission": "affinity_get_coworker_connections",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.get_lists",
-        "permission": "affinity_get_lists",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.get_single_list_entry",
-        "permission": "affinity_get_single_list_entry",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.get_list_info",
-        "permission": "affinity_get_list_info",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.search_list_entries",
-        "permission": "affinity_search_list_entries",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.get_meetings",
-        "permission": "affinity_get_meetings",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.get_meetings_for_entity",
-        "permission": "affinity_get_meetings_for_entity",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.query_notes",
-        "permission": "affinity_query_notes",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.get_notes_for_entity",
-        "permission": "affinity_get_notes_for_entity",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.get_entities_attached_to_note",
-        "permission": "affinity_get_entities_attached_to_note",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.search_notes",
-        "permission": "affinity_search_notes",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.get_entity_files",
-        "permission": "affinity_get_entity_files",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.get_entity_file_metadata",
-        "permission": "affinity_get_entity_file_metadata",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.search_files",
-        "permission": "affinity_search_files",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.search_opportunities",
-        "permission": "affinity_search_opportunities",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.search_persons",
-        "permission": "affinity_search_persons",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.get_person_info",
-        "permission": "affinity_get_person_info",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.get_persons_info",
-        "permission": "affinity_get_persons_info",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.get_person_list_entries",
-        "permission": "affinity_get_person_list_entries",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.get_person_relationships",
-        "permission": "affinity_get_person_relationships",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.get_company_relationships",
-        "permission": "affinity_get_company_relationships",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.get_reminders",
-        "permission": "affinity_get_reminders",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.get_saved_views",
-        "permission": "affinity_get_saved_views",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.get_saved_view_list_entries",
-        "permission": "affinity_get_saved_view_list_entries",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.get_transcript_fragments",
-        "permission": "affinity_get_transcript_fragments",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.get_users",
-        "permission": "affinity_get_users",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.get_calls",
-        "permission": "affinity_get_calls",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.get_chat_messages",
-        "permission": "affinity_get_chat_messages",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.get_emails",
-        "permission": "affinity_get_emails",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.get_interactions_for_entity",
-        "permission": "affinity_get_interactions_for_entity",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.get_intro_paths",
-        "permission": "affinity_get_intro_paths",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.render_intro_paths_graph",
-        "permission": "affinity_render_intro_paths_graph",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.get_opportunities_info",
-        "permission": "affinity_get_opportunities_info",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.get_suggested_field_updates",
-        "permission": "affinity_get_suggested_field_updates",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.get_suggested_field_updates_task",
-        "permission": "affinity_get_suggested_field_updates_task",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.list_suggested_field_updates",
-        "permission": "affinity_list_suggested_field_updates",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.list_suggested_field_updates_tasks",
-        "permission": "affinity_list_suggested_field_updates_tasks",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.data_quality_audit",
-        "permission": "affinity_data_quality_audit",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.founder_references",
-        "permission": "affinity_founder_references",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.passed_deal_review",
-        "permission": "affinity_passed_deal_review",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.portfolio_check_in",
-        "permission": "affinity_portfolio_check_in",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.ready_to_raise_indicator",
-        "permission": "affinity_ready_to_raise_indicator",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.render_warm_intro_graph",
-        "permission": "affinity_render_warm_intro_graph",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.affinity_data_migration",
-        "permission": "affinity_affinity_data_migration",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.affinity_event_setup",
-        "permission": "affinity_affinity_event_setup",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.affinity_lp_pipeline_brief",
-        "permission": "affinity_affinity_lp_pipeline_brief",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.affinity_meeting_prep",
-        "permission": "affinity_affinity_meeting_prep",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.affinity_missed_deal_review",
-        "permission": "affinity_affinity_missed_deal_review",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.affinity_reference_check",
-        "permission": "affinity_affinity_reference_check",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.company_signals",
-        "permission": "affinity_company_signals",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.crm_audit",
-        "permission": "affinity_crm_audit",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.customer_ready_to_raise",
-        "permission": "affinity_customer_ready_to_raise",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.market_map_generator",
-        "permission": "affinity_market_map_generator",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.portfolio_attention_score",
-        "permission": "affinity_portfolio_attention_score",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.warm_intro",
-        "permission": "affinity_warm_intro",
-        "effect": "allow",
-        "readOnly": true
-      },
-      {
-        "name": "affinity.create_company",
-        "permission": "affinity_create_company",
-        "effect": "allow",
-        "readOnly": false
-      },
-      {
-        "name": "affinity.create_field",
-        "permission": "affinity_create_field",
-        "effect": "allow",
-        "readOnly": false
-      },
-      {
-        "name": "affinity.create_list_field_dropdown_option",
-        "permission": "affinity_create_list_field_dropdown_option",
-        "effect": "allow",
-        "readOnly": false
-      },
-      {
-        "name": "affinity.create_interaction",
-        "permission": "affinity_create_interaction",
-        "effect": "allow",
-        "readOnly": false
-      },
-      {
-        "name": "affinity.create_list",
-        "permission": "affinity_create_list",
-        "effect": "allow",
-        "readOnly": false
-      },
-      {
-        "name": "affinity.create_list_entry",
-        "permission": "affinity_create_list_entry",
-        "effect": "allow",
-        "readOnly": false
-      },
-      {
-        "name": "affinity.create_note",
-        "permission": "affinity_create_note",
-        "effect": "allow",
-        "readOnly": false
-      },
-      {
-        "name": "affinity.create_opportunity",
-        "permission": "affinity_create_opportunity",
-        "effect": "allow",
-        "readOnly": false
-      },
-      {
-        "name": "affinity.create_person",
-        "permission": "affinity_create_person",
-        "effect": "allow",
-        "readOnly": false
-      },
-      {
-        "name": "affinity.create_reminder",
-        "permission": "affinity_create_reminder",
-        "effect": "allow",
-        "readOnly": false
-      },
-      {
-        "name": "affinity.issue_entity_files_upload_token",
-        "permission": "affinity_issue_entity_files_upload_token",
-        "effect": "allow",
-        "readOnly": false
-      },
-      {
-        "name": "affinity.issue_entity_files_download_token",
-        "permission": "affinity_issue_entity_files_download_token",
-        "effect": "allow",
-        "readOnly": false
-      },
-      {
-        "name": "affinity.update_company",
-        "permission": "affinity_update_company",
-        "effect": "allow",
-        "readOnly": false
-      },
-      {
-        "name": "affinity.update_list_field_dropdown_option",
-        "permission": "affinity_update_list_field_dropdown_option",
-        "effect": "allow",
-        "readOnly": false
-      },
-      {
-        "name": "affinity.upsert_entity_field_values",
-        "permission": "affinity_upsert_entity_field_values",
-        "effect": "allow",
-        "readOnly": false
-      },
-      {
-        "name": "affinity.upsert_list_entry_field_values",
-        "permission": "affinity_upsert_list_entry_field_values",
-        "effect": "allow",
-        "readOnly": false
-      },
-      {
-        "name": "affinity.update_note",
-        "permission": "affinity_update_note",
-        "effect": "allow",
-        "readOnly": false
-      },
-      {
-        "name": "affinity.update_opportunity",
-        "permission": "affinity_update_opportunity",
-        "effect": "allow",
-        "readOnly": false
-      },
-      {
-        "name": "affinity.update_person",
-        "permission": "affinity_update_person",
-        "effect": "allow",
-        "readOnly": false
-      },
-      {
-        "name": "affinity.update_reminder",
-        "permission": "affinity_update_reminder",
-        "effect": "allow",
-        "readOnly": false
-      },
-      {
-        "name": "affinity.update_field",
-        "permission": "affinity_update_field",
-        "effect": "allow",
-        "readOnly": false
-      },
-      {
-        "name": "affinity.apply_suggested_field_updates",
-        "permission": "affinity_apply_suggested_field_updates",
-        "effect": "allow",
-        "readOnly": false
-      },
-      {
-        "name": "affinity.dismiss_suggested_field_updates",
-        "permission": "affinity_dismiss_suggested_field_updates",
-        "effect": "allow",
-        "readOnly": false
-      },
-      {
-        "name": "affinity.suggest_field_updates",
-        "permission": "affinity_suggest_field_updates",
-        "effect": "allow",
-        "readOnly": false
-      },
-      {
-        "name": "affinity.delete_company",
-        "permission": "affinity_delete_company",
-        "effect": "allow",
-        "readOnly": false
-      },
-      {
-        "name": "affinity.delete_person",
-        "permission": "affinity_delete_person",
-        "effect": "allow",
-        "readOnly": false
-      },
-      {
-        "name": "affinity.delete_opportunity",
-        "permission": "affinity_delete_opportunity",
-        "effect": "allow",
-        "readOnly": false
-      },
-      {
-        "name": "affinity.delete_note",
-        "permission": "affinity_delete_note",
-        "effect": "allow",
-        "readOnly": false
-      },
-      {
-        "name": "affinity.delete_list_entries",
-        "permission": "affinity_delete_list_entries",
-        "effect": "allow",
-        "readOnly": false
-      },
-      {
-        "name": "affinity.delete_list_field_dropdown_option",
-        "permission": "affinity_delete_list_field_dropdown_option",
-        "effect": "allow",
-        "readOnly": false
-      },
-      {
-        "name": "affinity.delete_reminder",
-        "permission": "affinity_delete_reminder",
-        "effect": "allow",
-        "readOnly": false
-      },
-      {
-        "name": "affinity.delete_field",
-        "permission": "affinity_delete_field",
-        "effect": "allow",
-        "readOnly": false
-      },
-      {
-        "name": "affinity.merge_companies",
-        "permission": "affinity_merge_companies",
-        "effect": "allow",
-        "readOnly": false
-      },
-      {
-        "name": "affinity.merge_persons",
-        "permission": "affinity_merge_persons",
-        "effect": "allow",
-        "readOnly": false
-      },
-      {
-        "name": "affinity.send_feedback",
-        "permission": "affinity_send_feedback",
-        "effect": "allow",
-        "readOnly": false
-      }
     ],
-    "skills": [
-      "affinity",
-      "affinity-write"
-    ],
-    "rpc": [],
-    "views": [],
-    "signIns": [
-      {
-        "id": "affinity",
-        "label": "Affinity",
-        "server": "affinity"
-      }
-    ],
-    "contributes": {
-      "homeFeeds": [],
-      "homeWidgets": [],
-      "workKinds": [],
-      "settings": [
-        {
-          "key": "access",
-          "label": "Access",
-          "type": "string",
-          "description": "How much the plugin's tools may do. Generates default rules for agents with a base allow rule.",
-          "choices": [
-            {
-              "value": "all",
-              "label": "Allowed",
-              "description": "Every tool runs without asking, reads and changes alike."
-            },
-            {
-              "value": "ask-changes",
-              "label": "Ask before changes",
-              "description": "Reads run without asking. Each change asks you first."
-            },
-            {
-              "value": "read-only",
-              "label": "Read only",
-              "description": "Reads run. Changes never run."
-            }
-          ],
-          "default": "all"
-        },
-        {
-          "key": "clientId",
-          "label": "Client ID",
-          "type": "string",
-          "description": "Optional. The client ID, a UUID, of your organisation's own Public OAuth app in Affinity (Settings > Manage Apps). Leave it empty to sign in with OpenCode's client URL, which an Affinity admin adds once. Not a secret."
-        }
-      ]
+    "actions": [],
+    "events": {
+      "changed": {}
     }
   }
 }

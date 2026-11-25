@@ -1,0 +1,726 @@
+{
+  "$comment": "Recorded through affinity's own handlers over a fake Affinity MCP transport: two mcp accounts, work and personal, the meetings source's pages and the companies snapshot. No live call is made. Every organisation, person, address, meeting and company is invented; the refused meeting's title holds a credential-shaped string that the recording never carries.",
+  "plugin": "@we-the-rebel-alliance/affinity-plugin",
+  "namespace": "Affinity CRM: the firm's companies, people, deals, lists, notes and meetings, read through Affinity's MCP server and its own tools. Pass account for each alias. send_feedback is offered only when the user asks. Writes reach the firm's shared CRM and share its monthly API quota.",
+  "accounts": {
+    "real": true,
+    "aliases": [
+      "work",
+      "personal"
+    ],
+    "required": {
+      "method": "events_list",
+      "code": "ACCOUNT_REQUIRED"
+    },
+    "unknown": {
+      "method": "events_list",
+      "account": "nobodyhere",
+      "code": "ACCOUNT_UNKNOWN"
+    },
+    "cursors": [
+      {
+        "method": "events_list",
+        "account": "work",
+        "other": "personal",
+        "code": "CURSOR_INVALID"
+      }
+    ]
+  },
+  "sources": {
+    "affinity.meetings": {
+      "cases": [
+        {
+          "label": "the work account's meetings, oldest first, with a colleague's meeting and a secret left out",
+          "input": {
+            "source": "affinity",
+            "account": "work",
+            "since": "2026-11-01T00:00:00Z"
+          },
+          "answer": {
+            "source": "affinity",
+            "account": "work",
+            "owner": {
+              "id": "affinity:user:77",
+              "label": "Pilot Owner (Example Ventures)"
+            },
+            "events": [
+              {
+                "source": "affinity",
+                "account": "work",
+                "external_id": "1000",
+                "kind": "meeting",
+                "occurred_at": "2026-11-03T10:00:00.000Z",
+                "thread": null,
+                "actors": [
+                  {
+                    "role": "organizer",
+                    "id": "affinity:person/9001"
+                  },
+                  {
+                    "role": "attendee",
+                    "id": "affinity:person/501"
+                  }
+                ],
+                "title": "Quarterly LP update",
+                "text": "",
+                "url": null,
+                "labels": [],
+                "hash": "sha256:153e83c90e75699399d330a2f88b5b3db567e1e9d9844d3f1178ba20a728df3a"
+              },
+              {
+                "source": "affinity",
+                "account": "work",
+                "external_id": "1001",
+                "kind": "meeting",
+                "occurred_at": "2026-11-12T09:00:00.000Z",
+                "thread": null,
+                "actors": [
+                  {
+                    "role": "organizer",
+                    "id": "affinity:person/9001"
+                  },
+                  {
+                    "role": "attendee",
+                    "id": "affinity:person/502"
+                  }
+                ],
+                "title": "Intro: Northwind Robotics",
+                "text": "",
+                "url": null,
+                "labels": [],
+                "hash": "sha256:d59d15c7b0c082861d0030b9f92a653e212bfdcc1311fc46aab94bb39de940c0"
+              },
+              {
+                "source": "affinity",
+                "account": "work",
+                "external_id": "1002",
+                "kind": "meeting",
+                "occurred_at": "2026-11-12T16:00:00.000Z",
+                "thread": null,
+                "actors": [
+                  {
+                    "role": "organizer",
+                    "id": "affinity:person/9001"
+                  }
+                ],
+                "title": "Board prep",
+                "text": "",
+                "url": null,
+                "labels": [],
+                "hash": "sha256:4a7fb52cd308d2a5c2673587378153835d0f2d72294f22a4559737945e4462e2"
+              }
+            ],
+            "cursor": "eyJ2IjoyLCJzIjoiYWZmaW5pdHkiLCJiIjoiY2VhOTJmYzYxNDg2YjBjMiIsImwiOiJtZWV0aW5ncyIsInQiOjE3OTQ1Njc2MDAwMDAsImkiOjkwMDcxOTkyNTQ3NDA5OTEsImciOjE3OTQ1NzEyMDAwMDAsInciOjE3OTQ1NzEyMDAwMDAsImUiOlsxNzkzNDkxMjAwMDAwLDBdLCJwIjpbMTc5MzQ5MTIwMDAwMCwwXSwieCI6MTEwNTkyMDAwMDAsInkiOjI0MTkyMDAwMDB9",
+            "more": false,
+            "trust": "untrusted",
+            "refused": [
+              {
+                "external_id": "1004",
+                "reason": "secret",
+                "detail": "holds a secret (api key)"
+              }
+            ],
+            "cost": {
+              "units": [
+                {
+                  "per": "call",
+                  "count": 3
+                }
+              ]
+            },
+            "plugin": "@we-the-rebel-alliance/affinity-plugin",
+            "asOf": "2026-11-13T12:00:00.000Z"
+          }
+        },
+        {
+          "label": "the first two meetings, then more",
+          "input": {
+            "source": "affinity",
+            "account": "work",
+            "since": "2026-11-01T00:00:00Z",
+            "limit": 2
+          },
+          "answer": {
+            "source": "affinity",
+            "account": "work",
+            "owner": {
+              "id": "affinity:user:77",
+              "label": "Pilot Owner (Example Ventures)"
+            },
+            "events": [
+              {
+                "source": "affinity",
+                "account": "work",
+                "external_id": "1000",
+                "kind": "meeting",
+                "occurred_at": "2026-11-03T10:00:00.000Z",
+                "thread": null,
+                "actors": [
+                  {
+                    "role": "organizer",
+                    "id": "affinity:person/9001"
+                  },
+                  {
+                    "role": "attendee",
+                    "id": "affinity:person/501"
+                  }
+                ],
+                "title": "Quarterly LP update",
+                "text": "",
+                "url": null,
+                "labels": [],
+                "hash": "sha256:153e83c90e75699399d330a2f88b5b3db567e1e9d9844d3f1178ba20a728df3a"
+              },
+              {
+                "source": "affinity",
+                "account": "work",
+                "external_id": "1001",
+                "kind": "meeting",
+                "occurred_at": "2026-11-12T09:00:00.000Z",
+                "thread": null,
+                "actors": [
+                  {
+                    "role": "organizer",
+                    "id": "affinity:person/9001"
+                  },
+                  {
+                    "role": "attendee",
+                    "id": "affinity:person/502"
+                  }
+                ],
+                "title": "Intro: Northwind Robotics",
+                "text": "",
+                "url": null,
+                "labels": [],
+                "hash": "sha256:d59d15c7b0c082861d0030b9f92a653e212bfdcc1311fc46aab94bb39de940c0"
+              }
+            ],
+            "cursor": "eyJ2IjoyLCJzIjoiYWZmaW5pdHkiLCJiIjoiY2VhOTJmYzYxNDg2YjBjMiIsImwiOiJtZWV0aW5ncyIsInQiOjE3OTQ0NzQwMDAwMDAsImkiOjEwMDEsImciOjE3OTQ1NzEyMDAwMDAsInciOjE3OTQ1NzEyMDAwMDAsImUiOlsxNzkzNDkxMjAwMDAwLDBdLCJwIjpbMTc5MzQ5MTIwMDAwMCwwXSwieCI6MTEwNTkyMDAwMDAsInkiOjI0MTkyMDAwMDB9",
+            "more": true,
+            "trust": "untrusted",
+            "refused": [
+              {
+                "external_id": "1004",
+                "reason": "secret",
+                "detail": "holds a secret (api key)"
+              }
+            ],
+            "cost": {
+              "units": [
+                {
+                  "per": "call",
+                  "count": 2
+                }
+              ]
+            },
+            "plugin": "@we-the-rebel-alliance/affinity-plugin",
+            "asOf": "2026-11-13T12:00:00.000Z"
+          }
+        },
+        {
+          "label": "what came after the first two",
+          "input": {
+            "source": "affinity",
+            "account": "work",
+            "cursor": "eyJ2IjoyLCJzIjoiYWZmaW5pdHkiLCJiIjoiY2VhOTJmYzYxNDg2YjBjMiIsImwiOiJtZWV0aW5ncyIsInQiOjE3OTQ0NzQwMDAwMDAsImkiOjEwMDEsImciOjE3OTQ1NzEyMDAwMDAsInciOjE3OTQ1NzEyMDAwMDAsImUiOlsxNzkzNDkxMjAwMDAwLDBdLCJwIjpbMTc5MzQ5MTIwMDAwMCwwXSwieCI6MTEwNTkyMDAwMDAsInkiOjI0MTkyMDAwMDB9"
+          },
+          "answer": {
+            "source": "affinity",
+            "account": "work",
+            "owner": {
+              "id": "affinity:user:77",
+              "label": "Pilot Owner (Example Ventures)"
+            },
+            "events": [
+              {
+                "source": "affinity",
+                "account": "work",
+                "external_id": "1002",
+                "kind": "meeting",
+                "occurred_at": "2026-11-12T16:00:00.000Z",
+                "thread": null,
+                "actors": [
+                  {
+                    "role": "organizer",
+                    "id": "affinity:person/9001"
+                  }
+                ],
+                "title": "Board prep",
+                "text": "",
+                "url": null,
+                "labels": [],
+                "hash": "sha256:4a7fb52cd308d2a5c2673587378153835d0f2d72294f22a4559737945e4462e2"
+              }
+            ],
+            "cursor": "eyJ2IjoyLCJzIjoiYWZmaW5pdHkiLCJiIjoiY2VhOTJmYzYxNDg2YjBjMiIsImwiOiJtZWV0aW5ncyIsInQiOjE3OTQ1Njc2MDAwMDAsImkiOjkwMDcxOTkyNTQ3NDA5OTEsImciOjE3OTQ1NzEyMDAwMDAsInciOjE3OTQ1NzEyMDAwMDAsImUiOlsxNzk0NDc0MDAwMDAwLDEwMDFdLCJwIjpbMTc5NDQ3NDAwMDAwMCwxMDAxXSwieCI6MTEwNTkyMDAwMDAsInkiOjQ4Mzg0MDAwMDB9",
+            "more": false,
+            "trust": "untrusted",
+            "cost": {
+              "units": [
+                {
+                  "per": "call",
+                  "count": 1
+                }
+              ]
+            },
+            "plugin": "@we-the-rebel-alliance/affinity-plugin",
+            "asOf": "2026-11-13T12:00:00.000Z"
+          }
+        },
+        {
+          "label": "the personal account's own meeting",
+          "input": {
+            "source": "affinity",
+            "account": "personal",
+            "since": "2026-11-01T00:00:00Z"
+          },
+          "answer": {
+            "source": "affinity",
+            "account": "personal",
+            "owner": {
+              "id": "affinity:user:88",
+              "label": "Pilot Owner (Owner Family Office)"
+            },
+            "events": [
+              {
+                "source": "affinity",
+                "account": "personal",
+                "external_id": "2000",
+                "kind": "meeting",
+                "occurred_at": "2026-11-11T18:00:00.000Z",
+                "thread": null,
+                "actors": [
+                  {
+                    "role": "organizer",
+                    "id": "affinity:person/9003"
+                  },
+                  {
+                    "role": "attendee",
+                    "id": "affinity:person/503"
+                  }
+                ],
+                "title": "Weekend planning",
+                "text": "",
+                "url": null,
+                "labels": [],
+                "hash": "sha256:cc7f292de9d918c592054d05eea5d0bfee2f9fad57f19a20ebd7c87b97db5261"
+              }
+            ],
+            "cursor": "eyJ2IjoyLCJzIjoiYWZmaW5pdHkiLCJiIjoiYTZlNzI2NWFmM2ExNzBkOSIsImwiOiJtZWV0aW5ncyIsInQiOjE3OTQ1Njc2MDAwMDAsImkiOjkwMDcxOTkyNTQ3NDA5OTEsImciOjE3OTQ1NzEyMDAwMDAsInciOjE3OTQ1NzEyMDAwMDAsImUiOlsxNzkzNDkxMjAwMDAwLDBdLCJwIjpbMTc5MzQ5MTIwMDAwMCwwXSwieCI6MTEwNTkyMDAwMDAsInkiOjI0MTkyMDAwMDB9",
+            "more": false,
+            "trust": "untrusted",
+            "cost": {
+              "units": [
+                {
+                  "per": "call",
+                  "count": 3
+                }
+              ]
+            },
+            "plugin": "@we-the-rebel-alliance/affinity-plugin",
+            "asOf": "2026-11-13T12:00:00.000Z"
+          }
+        },
+        {
+          "label": "an empty page still carries a cursor",
+          "input": {
+            "source": "affinity",
+            "account": "work",
+            "since": "2026-11-13T00:00:00Z"
+          },
+          "expect": "empty",
+          "answer": {
+            "source": "affinity",
+            "account": "work",
+            "owner": {
+              "id": "affinity:user:77",
+              "label": "Pilot Owner (Example Ventures)"
+            },
+            "events": [],
+            "cursor": "eyJ2IjoyLCJzIjoiYWZmaW5pdHkiLCJiIjoiY2VhOTJmYzYxNDg2YjBjMiIsImwiOiJtZWV0aW5ncyIsInQiOjE3OTQ1Njc2MDAwMDAsImkiOjkwMDcxOTkyNTQ3NDA5OTEsImciOjE3OTQ1NzEyMDAwMDAsInciOjE3OTQ1NzEyMDAwMDAsImUiOlsxNzk0NTI4MDAwMDAwLDBdLCJwIjpbMTc5NDUyODAwMDAwMCwwXSwieCI6MTEwNTkyMDAwMDAsInkiOjEyMDk2MDAwMDB9",
+            "more": false,
+            "trust": "untrusted",
+            "cost": {
+              "units": [
+                {
+                  "per": "call",
+                  "count": 1
+                }
+              ]
+            },
+            "plugin": "@we-the-rebel-alliance/affinity-plugin",
+            "asOf": "2026-11-13T12:00:00.000Z"
+          }
+        },
+        {
+          "label": "a since before the 90 days the source reads back starts there, with a gap",
+          "input": {
+            "source": "affinity",
+            "account": "work",
+            "since": "2026-01-01T00:00:00Z"
+          },
+          "answer": {
+            "source": "affinity",
+            "account": "work",
+            "owner": {
+              "id": "affinity:user:77",
+              "label": "Pilot Owner (Example Ventures)"
+            },
+            "events": [
+              {
+                "source": "affinity",
+                "account": "work",
+                "external_id": "1000",
+                "kind": "meeting",
+                "occurred_at": "2026-11-03T10:00:00.000Z",
+                "thread": null,
+                "actors": [
+                  {
+                    "role": "organizer",
+                    "id": "affinity:person/9001"
+                  },
+                  {
+                    "role": "attendee",
+                    "id": "affinity:person/501"
+                  }
+                ],
+                "title": "Quarterly LP update",
+                "text": "",
+                "url": null,
+                "labels": [],
+                "hash": "sha256:153e83c90e75699399d330a2f88b5b3db567e1e9d9844d3f1178ba20a728df3a"
+              },
+              {
+                "source": "affinity",
+                "account": "work",
+                "external_id": "1001",
+                "kind": "meeting",
+                "occurred_at": "2026-11-12T09:00:00.000Z",
+                "thread": null,
+                "actors": [
+                  {
+                    "role": "organizer",
+                    "id": "affinity:person/9001"
+                  },
+                  {
+                    "role": "attendee",
+                    "id": "affinity:person/502"
+                  }
+                ],
+                "title": "Intro: Northwind Robotics",
+                "text": "",
+                "url": null,
+                "labels": [],
+                "hash": "sha256:d59d15c7b0c082861d0030b9f92a653e212bfdcc1311fc46aab94bb39de940c0"
+              },
+              {
+                "source": "affinity",
+                "account": "work",
+                "external_id": "1002",
+                "kind": "meeting",
+                "occurred_at": "2026-11-12T16:00:00.000Z",
+                "thread": null,
+                "actors": [
+                  {
+                    "role": "organizer",
+                    "id": "affinity:person/9001"
+                  }
+                ],
+                "title": "Board prep",
+                "text": "",
+                "url": null,
+                "labels": [],
+                "hash": "sha256:4a7fb52cd308d2a5c2673587378153835d0f2d72294f22a4559737945e4462e2"
+              }
+            ],
+            "cursor": "eyJ2IjoyLCJzIjoiYWZmaW5pdHkiLCJiIjoiY2VhOTJmYzYxNDg2YjBjMiIsImwiOiJtZWV0aW5ncyIsInQiOjE3OTQ1Njc2MDAwMDAsImkiOjkwMDcxOTkyNTQ3NDA5OTEsImciOjE3OTQ1NzEyMDAwMDAsInciOjE3OTQ1NzEyMDAwMDAsImUiOlsxNzg2Nzk1MjAwMDAwLDBdLCJwIjpbMTc4Njc5NTIwMDAwMCwwXSwieCI6MTEwNTkyMDAwMDAsInkiOjk2NzY4MDAwMDB9",
+            "more": false,
+            "trust": "untrusted",
+            "refused": [
+              {
+                "external_id": "1004",
+                "reason": "secret",
+                "detail": "holds a secret (api key)"
+              }
+            ],
+            "gap": {
+              "reason": "window-truncated",
+              "since": "2026-08-15T12:00:00.000Z"
+            },
+            "cost": {
+              "units": [
+                {
+                  "per": "call",
+                  "count": 4
+                }
+              ]
+            },
+            "plugin": "@we-the-rebel-alliance/affinity-plugin",
+            "asOf": "2026-11-13T12:00:00.000Z"
+          }
+        },
+        {
+          "label": "a cursor older than the source reads back answers a gap and reads on",
+          "input": {
+            "source": "affinity",
+            "account": "work",
+            "cursor": "eyJ2IjoyLCJzIjoiYWZmaW5pdHkiLCJiIjoiY2VhOTJmYzYxNDg2YjBjMiIsImwiOiJtZWV0aW5ncyIsInQiOjE3ODQxOTk2MDAwMDAsImkiOjkwMDcxOTkyNTQ3NDA5OTEsImciOjE3ODQyMDMyMDAwMDAsInciOjE3ODQyMDMyMDAwMDAsImUiOlsxNzg0MTE2ODAwMDAwLDBdLCJwIjpbMTc4NDExNjgwMDAwMCwwXSwieCI6MTEwNTkyMDAwMDAsInkiOjEyMDk2MDAwMDB9"
+          },
+          "expect": "expired",
+          "answer": {
+            "source": "affinity",
+            "account": "work",
+            "owner": {
+              "id": "affinity:user:77",
+              "label": "Pilot Owner (Example Ventures)"
+            },
+            "events": [
+              {
+                "source": "affinity",
+                "account": "work",
+                "external_id": "1000",
+                "kind": "meeting",
+                "occurred_at": "2026-11-03T10:00:00.000Z",
+                "thread": null,
+                "actors": [
+                  {
+                    "role": "organizer",
+                    "id": "affinity:person/9001"
+                  },
+                  {
+                    "role": "attendee",
+                    "id": "affinity:person/501"
+                  }
+                ],
+                "title": "Quarterly LP update",
+                "text": "",
+                "url": null,
+                "labels": [],
+                "hash": "sha256:153e83c90e75699399d330a2f88b5b3db567e1e9d9844d3f1178ba20a728df3a"
+              },
+              {
+                "source": "affinity",
+                "account": "work",
+                "external_id": "1001",
+                "kind": "meeting",
+                "occurred_at": "2026-11-12T09:00:00.000Z",
+                "thread": null,
+                "actors": [
+                  {
+                    "role": "organizer",
+                    "id": "affinity:person/9001"
+                  },
+                  {
+                    "role": "attendee",
+                    "id": "affinity:person/502"
+                  }
+                ],
+                "title": "Intro: Northwind Robotics",
+                "text": "",
+                "url": null,
+                "labels": [],
+                "hash": "sha256:d59d15c7b0c082861d0030b9f92a653e212bfdcc1311fc46aab94bb39de940c0"
+              },
+              {
+                "source": "affinity",
+                "account": "work",
+                "external_id": "1002",
+                "kind": "meeting",
+                "occurred_at": "2026-11-12T16:00:00.000Z",
+                "thread": null,
+                "actors": [
+                  {
+                    "role": "organizer",
+                    "id": "affinity:person/9001"
+                  }
+                ],
+                "title": "Board prep",
+                "text": "",
+                "url": null,
+                "labels": [],
+                "hash": "sha256:4a7fb52cd308d2a5c2673587378153835d0f2d72294f22a4559737945e4462e2"
+              }
+            ],
+            "cursor": "eyJ2IjoyLCJzIjoiYWZmaW5pdHkiLCJiIjoiY2VhOTJmYzYxNDg2YjBjMiIsImwiOiJtZWV0aW5ncyIsInQiOjE3OTQ1Njc2MDAwMDAsImkiOjkwMDcxOTkyNTQ3NDA5OTEsImciOjE3OTQ1NzEyMDAwMDAsInciOjE3OTQ1NzEyMDAwMDAsImUiOlsxNzg2Nzk1MjAwMDAwLDBdLCJwIjpbMTc4Njc5NTIwMDAwMCwwXSwieCI6MTEwNTkyMDAwMDAsInkiOjk2NzY4MDAwMDB9",
+            "more": false,
+            "trust": "untrusted",
+            "refused": [
+              {
+                "external_id": "1004",
+                "reason": "secret",
+                "detail": "holds a secret (api key)"
+              }
+            ],
+            "gap": {
+              "reason": "expired",
+              "since": "2026-08-15T12:00:00.000Z"
+            },
+            "cost": {
+              "units": [
+                {
+                  "per": "call",
+                  "count": 4
+                }
+              ]
+            },
+            "plugin": "@we-the-rebel-alliance/affinity-plugin",
+            "asOf": "2026-11-13T12:00:00.000Z"
+          }
+        },
+        {
+          "label": "a work cursor passed under personal",
+          "input": {
+            "source": "affinity",
+            "account": "personal",
+            "cursor": "eyJ2IjoyLCJzIjoiYWZmaW5pdHkiLCJiIjoiY2VhOTJmYzYxNDg2YjBjMiIsImwiOiJtZWV0aW5ncyIsInQiOjE3OTQ0NzQwMDAwMDAsImkiOjEwMDEsImciOjE3OTQ1NzEyMDAwMDAsInciOjE3OTQ1NzEyMDAwMDAsImUiOlsxNzkzNDkxMjAwMDAwLDBdLCJwIjpbMTc5MzQ5MTIwMDAwMCwwXSwieCI6MTEwNTkyMDAwMDAsInkiOjI0MTkyMDAwMDB9"
+          },
+          "expect": {
+            "refuses": "CURSOR_INVALID"
+          },
+          "refuses": "CURSOR_INVALID: The cursor was not issued by events_list for this account and source. Next step: Pass a cursor from a previous result for the same account, or start again with since."
+        },
+        {
+          "label": "a source this plugin does not have",
+          "input": {
+            "source": "notes",
+            "account": "work"
+          },
+          "expect": {
+            "refuses": "SOURCE_UNKNOWN"
+          },
+          "refuses": "SOURCE_UNKNOWN: This plugin lists one source, affinity. Next step: Leave source out, or pass \"affinity\"."
+        },
+        {
+          "label": "a list this plugin does not have",
+          "input": {
+            "source": "affinity",
+            "account": "work",
+            "list": "notes"
+          },
+          "expect": {
+            "refuses": "SOURCE_UNKNOWN"
+          },
+          "refuses": "SOURCE_UNKNOWN: A list read names \"companies\", not \"notes\". Next step: Pass \"list\" as \"companies\", or leave it out for the events feed."
+        },
+        {
+          "label": "Affinity's rate limit is RATE_LIMITED, with its request id",
+          "input": {
+            "source": "affinity",
+            "account": "work",
+            "since": "2026-11-01T00:00:00Z"
+          },
+          "expect": {
+            "refuses": "RATE_LIMITED"
+          },
+          "refuses": "RATE_LIMITED: get_meetings was refused for a rate limit or the firm's shared monthly API quota (Rate limit exceeded for this organisation (request req_0002_get_meetings)). Next step: Call it again later; if it says the monthly quota, ask an Affinity admin."
+        },
+        {
+          "label": "an answer this plugin cannot read is UNAVAILABLE, never an empty page",
+          "input": {
+            "source": "affinity",
+            "account": "work",
+            "since": "2026-11-01T00:00:00Z"
+          },
+          "expect": {
+            "refuses": "UNAVAILABLE"
+          },
+          "refuses": "UNAVAILABLE: Affinity's get_meetings answered in a shape this plugin does not read. Next step: Try again; if it keeps failing, report it with the plugin's version."
+        }
+      ],
+      "probe": {
+        "answer": {
+          "source": "affinity",
+          "account": "work",
+          "owner": {
+            "id": "affinity:user:77",
+            "label": "Pilot Owner (Example Ventures)"
+          },
+          "scopes": [
+            "mcp",
+            "mcp.read",
+            "offline_access"
+          ],
+          "trust": "untrusted"
+        }
+      }
+    },
+    "affinity.companies": {
+      "snapshot": {
+        "answer": {
+          "source": "affinity",
+          "account": "work",
+          "data": {
+            "items": [
+              {
+                "id": "2001",
+                "text": "Northwind Robotics",
+                "note": "northwind.example.test"
+              },
+              {
+                "id": "2002",
+                "text": "Harbour Capital",
+                "note": "harbour.example.test"
+              }
+            ],
+            "editable": false
+          },
+          "asOf": "2026-11-13T12:00:00.000Z",
+          "cost": {
+            "units": [
+              {
+                "per": "call",
+                "count": 1
+              }
+            ]
+          },
+          "trust": "untrusted"
+        }
+      },
+      "probe": {
+        "answer": {
+          "source": "affinity",
+          "account": "work",
+          "owner": {
+            "id": "affinity:user:77",
+            "label": "Pilot Owner (Example Ventures)"
+          },
+          "scopes": [
+            "mcp",
+            "mcp.read",
+            "offline_access"
+          ],
+          "trust": "untrusted"
+        }
+      }
+    }
+  },
+  "events": {
+    "emitted": [
+      "changed"
+    ],
+    "status": {
+      "name": "affinity",
+      "version": "0.0.0",
+      "host": {
+        "version": "2.4.1",
+        "range": ">=2.4.1 <2.5.0",
+        "tested": [
+          "2.4.1"
+        ]
+      },
+      "state": "ready",
+      "accounts": [
+        {
+          "alias": "work",
+          "state": "ready"
+        },
+        {
+          "alias": "personal",
+          "state": "ready"
+        }
+      ],
+      "unguardedAgents": [],
+      "nextStep": null
+    }
+  }
+}
