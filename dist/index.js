@@ -1,6 +1,6 @@
 import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
-// @we-the-rebel-alliance/affinity-plugin 0.0.8. Built by scripts/build.mjs; do not edit.
+// @we-the-rebel-alliance/affinity-plugin 0.0.0. Built by scripts/build.mjs; do not edit.
 var __create = Object.create;
 var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;

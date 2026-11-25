@@ -15,12 +15,12 @@ is the same schema the plugin validates.
 
 ```jsonc
 {
-  "plugins": [{ "package": "github:we-the-rebel-alliance/affinity-plugin#v0.0.8" }]
+  "plugins": [{ "package": "github:we-the-rebel-alliance/affinity-plugin#v0.0.0" }]
 }
 ```
 
 No options at all: one default account, `affinity`, signed in with `/connect`. Options go on the same entry:
-`{ "package": "github:we-the-rebel-alliance/affinity-plugin#v0.0.8", "options": { … } }`.
+`{ "package": "github:we-the-rebel-alliance/affinity-plugin#v0.0.0", "options": { … } }`.
 
 ## Two accounts, each with its own profile
 
@@ -28,7 +28,7 @@ No options at all: one default account, `affinity`, signed in with `/connect`. O
 {
   "plugins": [
     {
-      "package": "github:we-the-rebel-alliance/affinity-plugin#v0.0.8",
+      "package": "github:we-the-rebel-alliance/affinity-plugin#v0.0.0",
       "options": {
         "accounts": {
           "work": {},
@@ -48,7 +48,7 @@ No options at all: one default account, `affinity`, signed in with `/connect`. O
 {
   "plugins": [
     {
-      "package": "github:we-the-rebel-alliance/affinity-plugin#v0.0.8",
+      "package": "github:we-the-rebel-alliance/affinity-plugin#v0.0.0",
       "options": { "access": "read-only", "accounts": { "work": {} } }
     }
   ]
@@ -64,7 +64,7 @@ screen narrows, never widens.
 {
   "plugins": [
     {
-      "package": "github:we-the-rebel-alliance/affinity-plugin#v0.0.8",
+      "package": "github:we-the-rebel-alliance/affinity-plugin#v0.0.0",
       "options": { "access": "ask-changes", "accounts": { "work": {}, "personal": {} } }
     }
   ]
