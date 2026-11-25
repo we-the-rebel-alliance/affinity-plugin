@@ -136,6 +136,25 @@ describe("the meetings page", () => {
     expect(new Set(listed.map((event) => event.hash)).size).toBe(2)
   })
 
+  test("keeps the since filter across cursor pages: limit 1 lists every matching event exactly once", async () => {
+    const { handlers } = handlersFor()
+    const seen: string[] = []
+    let cursor: string | undefined
+    let pages = 0
+    for (; pages < 10; pages++) {
+      const answer = (await handlers.events_list.run({ since: "2026-11-01T00:00:00Z", limit: 1, ...(cursor === undefined ? {} : { cursor }) }, callOf("work"))) as EventsListResult
+      seen.push(...answer.events.map((event) => event.external_id))
+      cursor = answer.cursor
+      if (answer.events.length === 0) {
+        expect(answer.more).toBe(false)
+        break
+      }
+    }
+    expect(pages).toBe(3)
+    expect(seen).toEqual(["1000", "1001", "1002"])
+    expect(new Set(seen).size).toBe(seen.length)
+  })
+
   test("refuses another account's cursor as CURSOR_INVALID, never as an empty page", async () => {
     const first = await page({}, { since: "2026-11-01T00:00:00Z", limit: 1 })
     const message = await refusalOf(() => handlersFor().handlers.events_list.run({ cursor: first.cursor }, callOf("personal")))
