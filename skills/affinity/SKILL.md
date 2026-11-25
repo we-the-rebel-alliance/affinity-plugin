@@ -1,7 +1,7 @@
 ---
 
 name: affinity
-description: Read the firm's Affinity CRM: companies, people, deals in lists, notes, files, reminders and meetings, plus the meetings feed and the companies snapshot this plugin adds. Not for another CRM, a calendar or a notes app.
+description: "Read the firm's Affinity CRM: companies, people, deals in lists, notes, files, reminders and meetings, plus the meetings feed and the companies snapshot this plugin adds. Not for another CRM, a calendar or a notes app."
 ---
 
 # Reading Affinity

@@ -27,6 +27,11 @@ describe("parseSkill", () => {
     expect(() => parseSkill("affinity", path("affinity"), "---\nname: affinity\n---\n\nThe body.")).toThrow(/has no description/)
   })
 
+  test("refuses a block scalar description", () => {
+    expect(() => parseSkill("affinity", path("affinity"), skill("affinity", ">", "A folded description."))).toThrow(/unreadable block scalar/)
+    expect(() => parseSkill("affinity", path("affinity"), skill("affinity", "|", "A literal description."))).toThrow(/unreadable block scalar/)
+  })
+
   test("refuses an empty body", () => {
     expect(() => parseSkill("affinity", path("affinity"), "---\nname: affinity\ndescription: Use Affinity.\n---\n\n")).toThrow(/has an empty body/)
   })

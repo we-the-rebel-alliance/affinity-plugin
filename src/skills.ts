@@ -39,6 +39,9 @@ export function parseSkill(name: string, path: string, text: string): Skill.Info
   if (fields.get("name") !== name) throw fail(`must be named "${name}" in its frontmatter`)
   const description = fields.get("description")
   if (!description) throw fail("has no description")
+  // A folded (`>`) or literal (`|`) block has its text on the lines after the indicator, which this one-line-per-field
+  // reader does not join: the host would register ">" as the description. Refuse it instead.
+  if (/^[>|][+-]?\d*$/.test(description)) throw fail("has an unreadable block scalar description")
   const content = match[2]!.trim()
   if (content === "") throw fail("has an empty body")
   return { id: Skill.ID.make(name), name: Skill.Name.make(name), description, path: Skill.Info.fields.path.make(path), content }
