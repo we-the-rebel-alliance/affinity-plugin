@@ -13,10 +13,9 @@ accounts can be signed in at once, one per Affinity organisation or person.
 opencode plugin add github:we-the-rebel-alliance/affinity-plugin#v0.0.0
 ```
 
-`v0.0.0` is the release cut from this pull request. The owner replaces the earlier published `v0.0.0` at `fbfa617`,
-which predates the skill registration, before the release bot cuts this one; the earlier tag does not carry this code
-until that replacement. Nothing else is needed: there are no runtime dependencies, and the built entry is committed,
-so the install needs no build step.
+`v0.0.0` is the release cut from this pull request. The lead's release bot replaces the earlier published `v0.0.0` at
+`fbfa617`, which predates the skill registration. Nothing else is needed: there are no runtime dependencies, and the
+built entry is committed, so the install needs no build step.
 
 ## Sign in
 
