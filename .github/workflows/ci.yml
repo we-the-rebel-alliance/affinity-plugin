@@ -41,4 +41,6 @@ jobs:
       - run: npm ci --ignore-scripts
       - name: The committed bundle is current
         run: npm run bundle && git diff --exit-code dist/
+      - name: The generated docs are current
+        run: npx plugin-kit docs --check
       - run: npm run check

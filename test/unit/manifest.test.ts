@@ -92,7 +92,7 @@ describe("the manifest", () => {
     expect(manifest.plugin.vendor).toEqual({ id: "affinity", name: "Affinity", domain: "affinity.co" })
     expect(manifest.plugin.host).toEqual({ opencode: ">=2.4.1 <2.5.0", tested: ["2.4.1"] })
     expect(pkg.name).toBe("@we-the-rebel-alliance/affinity-plugin")
-    expect(pkg.version).toBe("0.0.0")
+    expect(pkg.version).toBe("0.0.8")
   })
 
   test("keeps the namespace line within the fixed budget", () => {

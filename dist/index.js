@@ -12848,11 +12848,6 @@ async function loadSkills(directory = SKILLS_DIR) {
   }
   return { skills, problems };
 }
-function registerSkills(skill, skills) {
-  return skill.transform((editor) => {
-    for (const info of skills) editor.add(info);
-  });
-}
 
 // src/index.ts
 var index_default = Plugin.define({
@@ -12878,7 +12873,9 @@ var index_default = Plugin.define({
         profiles: plan.ok ? plan.value.accounts : []
       })
     );
-    const skillRegistration = await registerSkills(ctx.skill, skills);
+    const skillRegistration = await ctx.skill.transform((editor) => {
+      for (const skill of skills) editor.add(skill);
+    });
     return async () => {
       await skillRegistration.dispose();
       await registration.dispose();

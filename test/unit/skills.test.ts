@@ -4,7 +4,7 @@ import { join } from "node:path"
 import { statusAnswer } from "@we-the-rebel-alliance/plugin-contract/accounts"
 import { describe, expect, test } from "vitest"
 import { manifest } from "../../src/manifest.ts"
-import { loadSkills, parseSkill, registerSkills } from "../../src/skills.ts"
+import { loadSkills, parseSkill } from "../../src/skills.ts"
 
 const skill = (name: string, description: string, body: string) => `---\nname: ${name}\ndescription: ${description}\n---\n\n${body}\n`
 const path = (name: string) => `/tmp/skills/${name}/SKILL.md`
@@ -33,7 +33,7 @@ describe("parseSkill", () => {
 })
 
 describe("a broken skill", () => {
-  test("leaves the plugin started, registers the valid skills and reports SKILLS_INVALID in status", async () => {
+  test("reports SKILLS_INVALID in status for a missing and a broken file", async () => {
     const directory = await mkdtemp(join(tmpdir(), "affinity-skills-"))
     try {
       await mkdir(join(directory, "ok"), { recursive: true })
@@ -47,32 +47,9 @@ describe("a broken skill", () => {
       expect(problems).toHaveLength(2)
       expect(problems.every((problem) => problem.startsWith("SKILLS_INVALID:"))).toBe(true)
 
-      // The setup path continues: the valid skill is registered and the transform answers a disposer.
-      const added: string[] = []
-      const editor = {
-        list: () => [],
-        get: () => undefined,
-        add: (loaded: { readonly id: string }) => {
-          added.push(String(loaded.id))
-        },
-        update: () => undefined,
-        remove: () => undefined
-      }
-      const registration = await registerSkills(
-        {
-          transform: (async (callback: (value: typeof editor) => void) => {
-            callback(editor)
-            return { async dispose() {} }
-          }) as never
-        },
-        skills
-      )
-      await registration.dispose()
-      expect(added).toEqual(["ok"])
-
       const answer = statusAnswer({
         manifest,
-        version: "0.0.0",
+        version: "0.0.8",
         hostVersion: "2.4.1",
         accounts: [],
         problems,

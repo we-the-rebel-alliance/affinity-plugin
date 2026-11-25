@@ -49,7 +49,7 @@ try {
 
   const pkg = JSON.parse(readFileSync(join(pkgDir, "package.json"), "utf8"))
   check(pkg.name === "@we-the-rebel-alliance/affinity-plugin", `the tarball's package is ${String(pkg.name)}`)
-  check(pkg.version === "0.0.0", `the tarball's version is ${String(pkg.version)}`)
+  check(pkg.version === "0.0.8", `the tarball's version is ${String(pkg.version)}`)
   check(pkg.capabilities?.plugin?.name === "affinity", "the tarball carries no affinity manifest")
   check(pkg.exports?.["./server"] === "./dist/index.js", "the tarball names no ./server entry")
   check(pkg.dependencies === undefined, "the tarball declares runtime dependencies")

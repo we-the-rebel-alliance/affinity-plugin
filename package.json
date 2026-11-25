@@ -1,6 +1,6 @@
 {
   "name": "@we-the-rebel-alliance/affinity-plugin",
-  "version": "0.0.0",
+  "version": "0.0.8",
   "type": "module",
   "description": "Affinity CRM for OpenCode: read the firm's companies, people, deals, lists, notes and meetings, and change them through Affinity's own MCP tools.",
   "keywords": [
@@ -30,7 +30,7 @@
     "LICENSE"
   ],
   "scripts": {
-    "check": "npm run lint && npm run typecheck && npm run bundle && git diff --exit-code dist/ && npm run test && npm run conformance && npm run test:pack",
+    "check": "npm run lint && npm run typecheck && npm run bundle && git diff --exit-code dist/ && npm run test && npm run conformance && npx plugin-kit docs --check && npm run test:pack",
     "lint": "biome check .",
     "typecheck": "tsc --noEmit",
     "bundle": "esbuild src/index.ts --bundle --platform=node --format=esm --target=node22 --outfile=dist/index.js --external:'@opencode/*'",

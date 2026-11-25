@@ -14,7 +14,7 @@ import { profileOf, serverConfig } from "./accounts.ts"
 import { createHandlers } from "./handlers/index.ts"
 import { manifest } from "./manifest.ts"
 import { createProvider } from "./provider/index.ts"
-import { loadSkills, registerSkills } from "./skills.ts"
+import { loadSkills } from "./skills.ts"
 
 export default Plugin.define({
   id: manifest.plugin.name,
@@ -39,7 +39,9 @@ export default Plugin.define({
         profiles: plan.ok ? plan.value.accounts : []
       })
     )
-    const skillRegistration = await registerSkills(ctx.skill, skills)
+    const skillRegistration = await ctx.skill.transform((editor) => {
+      for (const skill of skills) editor.add(skill)
+    })
     return async () => {
       await skillRegistration.dispose()
       await registration.dispose()
