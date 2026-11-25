@@ -27,8 +27,8 @@ other scope, and the scope is pinned in code rather than copied from a challenge
 
 - A status reason is one line, redacted and cut to 160 characters: URL query values, `Bearer`/`Basic` credentials,
   JWTs and token-shaped words are replaced.
-- A refusal carries Affinity's own message for the failure, redacted the same way; the vendor's request id is kept,
-  because it is what a support ticket names.
+- A refusal carries Affinity's own message for the failure, redacted the same way; the redacted message is all a
+  refusal carries.
 - No token, cookie, password or connection string is ever written to status, an answer or a log.
 - A meeting whose title holds a credential is refused (`refused[]`, reason `secret`) rather than delivered, and a
   company whose name or domain holds one is left out of the list. Affinity's own answers are screened by the contract's
