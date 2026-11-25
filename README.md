@@ -1,7 +1,8 @@
 # Affinity plugin for OpenCode
 
 Affinity is a CRM for venture and private-capital firms: companies, people, deals held in lists, notes, meetings and
-relationship paths. This plugin connects OpenCode to your firm's Affinity through Affinity's hosted MCP server. It reads
+relationship paths. This plugin connects OpenCode to your firm's Affinity through Affinity's hosted MCP server, built
+on [plugin-contract](https://github.com/we-the-rebel-alliance/plugin-contract) v0. It reads
 the meetings you took part in as a cursor-based feed and your firm's companies as a list snapshot, and it passes
 Affinity's own tools through unchanged, so an agent can search, read and change what you are allowed to see. Several
 accounts can be signed in at once, one per Affinity organisation or person.
@@ -46,6 +47,16 @@ The sign-in asks for the scopes `mcp`, `mcp.read` and `offline_access`: changes,
 profile's `clientId`, OpenCode signs in with its own client metadata document; an Affinity admin may first have to add
 OpenCode's client URL under Settings, Manage Apps. A profile's `clientId` (a UUID) signs in as your organisation's own
 Public OAuth app instead.
+
+## Options
+
+| Option | Default | What it does |
+|---|---|---|
+| `access` | `all` | how much may run: `all`, `ask-changes` or `read-only` |
+| `accounts` | one `default` account | one profile per alias; its `clientId` signs in as your organisation's own OAuth app |
+| `allowUntestedHost` | `false` | start outside the tested OpenCode range; for testing only |
+
+[Configuration](docs/configuration.md) has every field and a full example.
 
 ## Access levels
 
@@ -222,8 +233,26 @@ Every failure reads `CODE: What happened. Next step: What to do.`
 | `UNAVAILABLE` | the provider could not be reached |
 <!-- /generated:errors -->
 
+## Troubleshooting
+
+- **`NEEDS_SIGN_IN`**: the alias's MCP server has no sign-in. Run `/connect` and choose that server (`affinity`,
+  `affinity-work`, …), then call again.
+- **`ACCOUNT_REQUIRED`**: more than one alias is configured and the call named none. Pass `account`; the refusal's next
+  step lists the aliases. `ACCOUNT_UNKNOWN` means the alias is not one `options.accounts` declares.
+- **`Unknown client_id` at sign-in**: an Affinity admin must add OpenCode's client URL under Settings, Manage Apps, or
+  the alias's profile sets `clientId` to your organisation's own Public OAuth app.
+- **`RATE_LIMITED`**: Affinity refused the call for a burst limit or the firm's shared monthly API quota. Wait, do not
+  retry in a loop, and ask an Affinity admin if it says the monthly quota.
+- **`CURSOR_INVALID`**: a cursor belongs to the account and source that issued it. Pass it with the same `account`, or
+  start again with `since`.
+- **`HOST_UNTESTED`**: OpenCode is outside the plugin's tested range (`>=2.4.1 <2.5.0`). Pin a supported release.
+- **An alias that stays in error**: its MCP server is missing, disabled or failed. Check `options.accounts`, then reload
+  the plugin; `status` (`tools.affinity.status` in Code Mode) names the state and the next step.
+
 ## Documentation
 
+- [plugin-contract](https://github.com/we-the-rebel-alliance/plugin-contract): the manifest, doors, events and error
+  table this plugin implements.
 - [Capabilities](docs/capabilities.md): the sources, the methods and what each one reads.
 - [Accounts](docs/accounts.md): aliases, profiles and signing in.
 - [Configuration](docs/configuration.md): every option and an example.
@@ -232,4 +261,4 @@ Every failure reads `CODE: What happened. Next step: What to do.`
 - [Security](docs/security.md): what leaves the machine, the scopes, and redaction.
 - [Contributing](CONTRIBUTING.md) and [Security policy](SECURITY.md).
 
-Affinity and the Affinity logo are trademarks of Affinity. This plugin is unofficial and not maintained by Affinity.
+Affinity and the Affinity logo are trademarks of Affinity. This plugin is not affiliated with or endorsed by Affinity.
