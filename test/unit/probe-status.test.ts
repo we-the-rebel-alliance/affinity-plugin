@@ -4,7 +4,6 @@
 import { STATUS_SCHEMA } from "@we-the-rebel-alliance/plugin-contract/accounts"
 import { PROBE_SCHEMA } from "@we-the-rebel-alliance/plugin-contract/events"
 import { describe, expect, test } from "vitest"
-import { createHandlers } from "../../src/handlers/index.ts"
 import { createProvider } from "../../src/provider/index.ts"
 import { fakeContext } from "../conformance/fake.ts"
 import { callOf, handlersFor, profiles, refusalOf, tableFor } from "./helpers.ts"

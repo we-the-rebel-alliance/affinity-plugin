@@ -5,7 +5,6 @@
  * input, a bad cursor and a truncated window. A refusal with no next step fails here rather than in a person's session.
  */
 import { describe, expect, test } from "vitest"
-import { createHandlers } from "../../src/handlers/index.ts"
 import { createProvider } from "../../src/provider/index.ts"
 import { fakeContext } from "../conformance/fake.ts"
 import { callOf, handlersFor, profiles, refusalOf, tableFor } from "./helpers.ts"

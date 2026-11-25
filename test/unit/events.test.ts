@@ -9,7 +9,6 @@ import { type EventsListResult, eventHash, resultProblems } from "@we-the-rebel-
 import { checkOutput } from "@we-the-rebel-alliance/plugin-contract/outputs"
 import { describe, expect, test } from "vitest"
 import { MAX_BYTES, SETTLE_MS } from "../../src/handlers/events.ts"
-import { createHandlers } from "../../src/handlers/index.ts"
 import { createProvider } from "../../src/provider/index.ts"
 import { fakeContext, NOW } from "../conformance/fake.ts"
 import { callOf, handlersFor, profiles, refusalOf, tableFor } from "./helpers.ts"

@@ -7,7 +7,7 @@
  * state of its own.
  */
 import { type AccountProfile, type AccountSignal, accountStatuses, redactReason, STATUS_SCHEMA, statusAnswer } from "@we-the-rebel-alliance/plugin-contract/accounts"
-import type { MethodCall, MethodHandler } from "@we-the-rebel-alliance/plugin-contract/register"
+import type { MethodHandler } from "@we-the-rebel-alliance/plugin-contract/register"
 import { manifest, version } from "../manifest.ts"
 import type { Provider, ServerState } from "../provider/index.ts"
 

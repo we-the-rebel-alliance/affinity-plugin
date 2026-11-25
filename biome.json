@@ -1,7 +1,7 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.6.9/schema.json",
   "files": {
-    "includes": ["**", "!dist/**", "!node_modules/**", "!coverage/**", "!.pack-test/**", "!*.tgz", "!assets/**", "!fixtures/**", "!**/*.md", "!test/unit/affinity-tools-list.json"]
+    "includes": ["**", "!dist", "!node_modules", "!coverage", "!.pack-test", "!*.tgz", "!assets", "!fixtures", "!**/*.md", "!test/unit/affinity-tools-list.json"]
   },
   "formatter": {
     "enabled": true,
