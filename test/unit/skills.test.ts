@@ -49,7 +49,7 @@ describe("a broken skill", () => {
 
       const answer = statusAnswer({
         manifest,
-        version: "0.0.8",
+        version: "0.0.0",
         hostVersion: "2.4.1",
         accounts: [],
         problems,

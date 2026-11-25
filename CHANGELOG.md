@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.0.8 (2026-11-25)
+## 0.0.0 (2026-11-25)
 
 The first release on plugin-contract: Affinity for OpenCode, built on [plugin-contract](https://github.com/we-the-rebel-alliance/plugin-contract) v0.0.0.
 
