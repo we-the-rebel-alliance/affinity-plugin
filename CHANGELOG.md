@@ -20,3 +20,4 @@ The 0.0.0 release on plugin-contract: Affinity for OpenCode, built on [plugin-co
   1 export — so OpenCode's access levels cover reads and changes before they run.
 - No actions and no plan/commit pair: every change is Affinity's own tool. Metered cost: each call shares the firm's
   monthly API quota, recorded as one call per unit at usd 0.
+- The release `NOTICE` carries the licence text of every package bundled into `dist/`: plugin-contract, yaml and zod.
